@@ -659,47 +659,95 @@
   }
 
   // Guardar catálogo en Firestore
+  function sanitizeForFirestore(obj) {
+    if (obj === undefined) return "";
+    if (obj === null) return "";
+    if (Array.isArray(obj)) return obj.map(sanitizeForFirestore);
+    if (typeof obj === "object") {
+      const clean = {};
+      for (const [k, v] of Object.entries(obj)) {
+        if (k !== undefined && k !== null) {
+          const safeKey = String(k).trim().replace(/[\.\/\#\$\[\]]/g, "_") || "campo";
+          clean[safeKey] = sanitizeForFirestore(v);
+        }
+      }
+      return clean;
+    }
+    return obj;
+  }
+
   async function fbSaveAll() {
-    if (!isFirebaseReady || !items.length) return;
+    if (!isFirebaseReady) {
+      console.warn("Firebase no está inicializado aún.");
+      toast("Firebase no está listo aún");
+      return;
+    }
+    if (!items.length) {
+      toast("No hay productos cargados para guardar");
+      return;
+    }
+
+    const syncBtn = $("#btnSyncFb");
+    if (syncBtn) {
+      syncBtn.disabled = true;
+      syncBtn.textContent = "Guardando en Firebase...";
+    }
+
     try {
-      // 1. Guardar metadata
+      console.log("🔥 Guardando en Firebase Firestore:", items.length, "productos...");
+      const cleanHeaders = (excelHeaders || []).map(h => String(h || "").trim());
       await fbDb.collection("catalog").doc("meta").set({
-        excelHeaders: excelHeaders,
-        rawExcelAOA: rawExcelAOA,
-        skuColIndex: skuColIndex,
-        nameColIndex: nameColIndex,
-        priceColIndex: priceColIndex,
-        catColIndex: catColIndex,
-        notes: notes,
+        excelHeaders: cleanHeaders,
+        skuColIndex: skuColIndex >= 0 ? skuColIndex : 0,
+        nameColIndex: nameColIndex !== undefined ? nameColIndex : -1,
+        priceColIndex: priceColIndex !== undefined ? priceColIndex : -1,
+        catColIndex: catColIndex !== undefined ? catColIndex : -1,
+        notes: sanitizeForFirestore(notes || {}),
+        itemCount: items.length,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       }, { merge: true });
 
-      // 2. Guardar productos en lotes
-      const BATCH_SIZE = 400;
+      const BATCH_SIZE = 250;
       for (let i = 0; i < items.length; i += BATCH_SIZE) {
         const batch = fbDb.batch();
         const chunk = items.slice(i, i + BATCH_SIZE);
         chunk.forEach(item => {
-          const docRef = fbDb.collection("products").doc(item.skuNorm);
+          const safeId = String(item.skuNorm || item.sku || "prod_" + Math.random()).replace(/[\.\/\#\$\[\]]/g, "_");
+          const docRef = fbDb.collection("products").doc(safeId);
           const imgUrl = (item.image && item.image.url && !item.image.url.startsWith("blob:")) ? item.image.url : (item.imageUrl || "");
           const imgName = (item.image && item.image.name) ? item.image.name : (item.imageName || "");
+
           batch.set(docRef, {
-            sku: item.sku,
-            skuNorm: item.skuNorm,
-            title: item.title || "",
-            desc: item.desc || "",
-            aiCategory: item.aiCategory || null,
-            revisado: !!item.revisado,
-            imageUrl: imgUrl,
-            imageName: imgName,
-            row: item.row || {}
+            sku: String(item.sku || ""),
+            skuNorm: String(item.skuNorm || ""),
+            title: String(item.title || ""),
+            desc: String(item.desc || ""),
+            aiCategory: item.aiCategory ? String(item.aiCategory) : null,
+            revisado: Boolean(item.revisado),
+            imageUrl: String(imgUrl || ""),
+            imageName: String(imgName || ""),
+            row: sanitizeForFirestore(item.row || {})
           }, { merge: true });
         });
         await batch.commit();
       }
-      console.log("🔥 Catálogo guardado en Firebase Firestore.");
-    } catch(e) {
-      console.error("Error guardando en Firestore:", e);
+
+      console.log("✅ ¡Catálogo guardado en Firebase con éxito!");
+      toast("🔥 ¡" + items.length + " productos guardados en Firebase!");
+      const b = $("#dbBadge");
+      if (b) b.textContent = items.length + " en Nube";
+    } catch(err) {
+      console.error("❌ Error en fbSaveAll:", err);
+      if (err && err.code === "permission-denied") {
+        alert("⚠️ Firebase rechazó la escritura por Reglas de Seguridad.\n\nVe a console.firebase.google.com > Firestore Database > pestaña Reglas y pon:\nallow read, write: if true;\n\nLuego dale Publicar.");
+      } else {
+        toast("Error Firebase: " + (err.message || err));
+      }
+    } finally {
+      if (syncBtn) {
+        syncBtn.disabled = false;
+        syncBtn.textContent = "☁️ Sincronizar con Firebase";
+      }
     }
   }
 

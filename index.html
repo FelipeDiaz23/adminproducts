@@ -1,0 +1,2209 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel de catÃ¡logo â€” SKU + fotos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+  :root{
+    --bg:#EEF0EC; --panel:#FFFFFF; --panel-2:#F5F5F2; --sidebar:#1E211D; --sidebar-2:#282C26;
+    --border:#D6D8D2; --text:#211E19; --muted:#666359;
+    --accent:#BE611E; --accent-ink:#7C3D0F; --accent-soft:#F3DEC7;
+    --teal:#1E6F63; --teal-soft:#D9EEEA; --danger:#AE3A26; --danger-soft:#F6DCD5;
+    --radius:10px;
+    --sans:'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --mono:'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#141517; --panel:#1D1E21; --panel-2:#25262A; --sidebar:#101113; --sidebar-2:#1A1B1E;
+      --border:#34363B; --text:#ECEDEE; --muted:#9EA1A6;
+      --accent:#E28A44; --accent-ink:#FFD9B0; --accent-soft:#3E2C18;
+      --teal:#5BC3B1; --teal-soft:#17302B; --danger:#E2695A; --danger-soft:#3B221D;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#141517; --panel:#1D1E21; --panel-2:#25262A; --sidebar:#101113; --sidebar-2:#1A1B1E;
+    --border:#34363B; --text:#ECEDEE; --muted:#9EA1A6;
+    --accent:#E28A44; --accent-ink:#FFD9B0; --accent-soft:#3E2C18;
+    --teal:#5BC3B1; --teal-soft:#17302B; --danger:#E2695A; --danger-soft:#3B221D;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--bg); color:var(--text); font-family:var(--sans);}
+  button{font-family:var(--sans); cursor:pointer; border-radius:7px; border:1px solid var(--border); background:var(--panel-2); color:var(--text); padding:8px 12px; font-size:0.8rem;}
+  button:hover{border-color:var(--accent);}
+  button:disabled{opacity:0.4; cursor:not-allowed;}
+  button.primary{background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600;}
+  button.primary:hover{filter:brightness(1.06);}
+  button.danger{background:var(--danger); border-color:var(--danger); color:#fff;}
+  button.wide{width:100%;}
+  select, input[type=text]{width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:7px; background:var(--panel-2); color:var(--text); font-family:var(--sans); font-size:0.83rem;}
+  label.field-label{display:block; font-size:0.7rem; color:var(--muted); margin:8px 0 4px;}
+
+  .shell{display:flex; min-height:100vh;}
+  .sidebar{
+    width:246px; flex-shrink:0; background:var(--sidebar); color:#EDEEEC; display:flex; flex-direction:column;
+    padding:18px 14px; gap:16px; position:sticky; top:0; height:100vh; overflow-y:auto;
+  }
+  .brand{font-weight:700; font-size:1.02rem; letter-spacing:-0.01em; display:flex; align-items:center; gap:8px; padding:0 4px;}
+  .navlist{display:flex; flex-direction:column; gap:2px;}
+  .navlist button{
+    background:transparent; border:none; color:#C7C9C4; text-align:left; padding:9px 10px; border-radius:7px;
+    font-size:0.86rem; display:flex; justify-content:space-between; align-items:center;
+  }
+  .navlist button:hover{background:var(--sidebar-2); color:#fff;}
+  .navlist button.active{background:var(--sidebar-2); color:#fff; font-weight:600;}
+  .navlist button .count{font-family:var(--mono); font-size:0.68rem; color:#8C8F89; background:#00000033; padding:1px 6px; border-radius:8px;}
+  .navlist button.active .count{color:var(--accent-ink); background:#00000040;}
+  .side-block{background:var(--sidebar-2); border-radius:9px; padding:12px; display:flex; flex-direction:column; gap:8px;}
+  .side-block h3{margin:0; font-size:0.7rem; text-transform:uppercase; letter-spacing:.04em; color:#9EA19B; font-weight:600;}
+  .side-block .hint{font-size:0.68rem; color:#9EA19B; line-height:1.35; margin:0;}
+  .file-drop{
+    border:1.3px dashed #454940; border-radius:8px; padding:10px; text-align:center; font-size:0.76rem; color:#C7C9C4; cursor:pointer; background:#00000022;
+  }
+  .file-drop:hover{border-color:var(--accent); color:#fff;}
+  .file-drop input{display:none;}
+  .file-drop .fname{display:block; margin-top:4px; font-family:var(--mono); font-size:0.66rem; color:var(--accent-ink); word-break:break-all;}
+  .sidebar select{background:#00000022; color:#EDEEEC; border-color:#454940;}
+  .sidebar .note{font-size:0.66rem; color:#82857E; line-height:1.4; margin-top:auto; padding-top:10px;}
+
+  .main-col{flex:1; min-width:0; display:flex; flex-direction:column;}
+  .topbar{
+    padding:16px clamp(14px,3vw,28px); border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;
+    background:var(--panel);
+  }
+  .topbar h1{margin:0; font-size:1.15rem; font-weight:700;}
+  .topbar p{margin:2px 0 0; font-size:0.8rem; color:var(--muted);}
+  .content{padding:20px clamp(14px,3vw,28px); flex:1;}
+  .view{display:none;}
+  .view.active{display:block;}
+
+  .cards-row{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-bottom:18px;}
+  .stat-card{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:14px;}
+  .stat-card .num{font-family:var(--mono); font-size:1.5rem; font-weight:600;}
+  .stat-card .lbl{font-size:0.74rem; color:var(--muted); margin-top:2px;}
+  .stat-card.warn{background:var(--danger-soft); border-color:var(--danger);}
+  .stat-card.warn .num{color:var(--danger);}
+
+  .progress-wrap{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px; margin-bottom:18px;}
+  .progress-wrap .row{display:flex; justify-content:space-between; font-size:0.82rem; margin-bottom:8px;}
+  .progress-bar{height:9px; border-radius:5px; background:var(--panel-2); overflow:hidden;}
+  .progress-bar > div{height:100%; background:var(--teal); border-radius:5px; transition:width .3s;}
+
+  .panel-box{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px; margin-bottom:16px;}
+  .panel-box h2{margin:0 0 10px; font-size:0.88rem; font-weight:600;}
+  .two-col{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  @media (max-width:760px){ .two-col{grid-template-columns:1fr;} }
+  .assign-row{display:flex; align-items:center; gap:6px; padding:6px 0; border-bottom:1px solid var(--border); font-size:0.78rem;}
+  .assign-row:last-child{border-bottom:none;}
+  .assign-row .sku-tag{font-family:var(--mono); font-weight:600; color:var(--accent-ink); min-width:78px;}
+  .assign-row select{flex:1; padding:5px 6px; font-size:0.74rem;}
+  .assign-row img.thumb{width:26px; height:26px; object-fit:cover; border-radius:4px; border:1px solid var(--border);}
+  .empty-mini{font-size:0.78rem; color:var(--muted); padding:6px 0;}
+
+  .toolbar{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:14px;}
+  .toolbar input[type=text]{max-width:260px;}
+  .toolbar select{max-width:170px;}
+  .chip-row{display:flex; gap:6px; flex-wrap:wrap;}
+  .chip{border:1px solid var(--border); background:var(--panel-2); color:var(--muted); border-radius:999px; padding:5px 11px; font-size:0.74rem; cursor:pointer; user-select:none;}
+  .chip.active{background:var(--accent-soft); border-color:var(--accent); color:var(--accent-ink); font-weight:600;}
+  .toggle-line{display:flex; align-items:center; gap:6px; font-size:0.76rem; color:var(--muted);}
+
+  .bulkbar{
+    display:none; align-items:center; gap:10px; background:var(--accent-soft); border:1px solid var(--accent);
+    border-radius:9px; padding:9px 12px; margin-bottom:14px; font-size:0.8rem; color:var(--accent-ink); flex-wrap:wrap;
+  }
+  .bulkbar.show{display:flex;}
+  .bulkbar b{font-family:var(--mono);}
+  .bulkbar .spacer{flex:1;}
+
+  .empty{border:1px dashed var(--border); border-radius:var(--radius); padding:44px 20px; text-align:center; color:var(--muted); font-size:0.9rem;}
+  .grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(230px,1fr)); gap:14px;}
+  .card{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); display:flex; flex-direction:column; overflow:hidden; position:relative;}
+  .card.reviewed{border-color:var(--teal);}
+  .card .select-box{position:absolute; top:8px; left:8px; z-index:2; width:18px; height:18px; accent-color:var(--accent);}
+  .photo{aspect-ratio:1/1; background:var(--panel-2); display:flex; align-items:center; justify-content:center; overflow:hidden; position:relative; color:var(--muted); font-size:0.72rem; flex-direction:column; gap:4px;}
+  .photo img{width:100%; height:100%; object-fit:cover; display:block;}
+  .card-body{padding:11px 12px 12px; display:flex; flex-direction:column; gap:8px; flex:1;}
+  .sku-line{display:flex; justify-content:space-between; align-items:center;}
+  .sku{font-family:var(--mono); font-size:0.76rem; color:var(--accent-ink); font-weight:600;}
+  .sku-orig{font-size:0.65rem; color:var(--muted); font-family:var(--mono); display:block; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .reviewed-toggle{display:flex; align-items:center; gap:4px; font-size:0.68rem; color:var(--muted);}
+  .fields{display:flex; flex-wrap:wrap; gap:5px;}
+  .fields span{background:var(--panel-2); border:1px solid var(--border); border-radius:6px; padding:2px 7px; font-size:0.68rem; color:var(--muted); max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  textarea.desc{width:100%; min-height:60px; resize:vertical; border:1px solid var(--border); border-radius:7px; background:var(--panel-2); color:var(--text); font-family:var(--sans); font-size:0.8rem; padding:8px;}
+  .card-actions{display:flex; gap:6px; flex-wrap:wrap;}
+  .card-actions button{flex:1; min-width:0; font-size:0.71rem; padding:7px 6px;}
+  .badge-nofoto{position:absolute; top:6px; right:6px; background:var(--danger); color:#fff; font-size:0.62rem; padding:2px 6px; border-radius:5px;}
+  .manual-assign{display:flex; gap:5px; margin-top:4px;}
+  .manual-assign select{font-size:0.68rem; padding:4px 5px;}
+
+  .compare-result{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:10px;}
+  @media (max-width:700px){ .compare-result{grid-template-columns:1fr;} }
+  .compare-col h3{margin:0 0 6px; font-size:0.76rem; color:var(--muted); font-weight:600; display:flex; justify-content:space-between; align-items:center;}
+  .compare-col h3 button{font-size:0.65rem; padding:3px 7px;}
+  .compare-col ul{margin:0; padding-left:16px; max-height:220px; overflow-y:auto; font-family:var(--mono); font-size:0.72rem; background:var(--panel-2); border-radius:7px; padding:8px 8px 8px 22px;}
+  .compare-col li{margin-bottom:2px;}
+  .warn-banner{background:var(--danger-soft); border:1px solid var(--danger); color:var(--danger); border-radius:9px; padding:10px 14px; font-size:0.8rem; margin-bottom:16px;}
+  .toast{position:fixed; bottom:18px; left:50%; transform:translateX(-50%); background:var(--text); color:var(--bg); padding:9px 16px; border-radius:8px; font-size:0.8rem; opacity:0; pointer-events:none; transition:opacity .2s, transform .2s; z-index:50;}
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(-4px);}
+  @media (max-width:760px){ .shell{flex-direction:column;} .sidebar{width:100%; height:auto; position:static;} }
+
+  .modal-overlay{display:none; position:fixed; inset:0; background:#000000AA; z-index:100; align-items:center; justify-content:center; padding:16px;}
+  .modal-overlay.show{display:flex;}
+  .modal-box{background:var(--panel); border-radius:12px; padding:18px; max-width:420px; width:100%; max-height:92vh; overflow-y:auto;}
+  .modal-box.wide-modal{max-width:640px;}
+  .modal-box h2{margin:0 0 12px; font-size:1rem;}
+  .editor-canvas-wrap{
+    width:100%; aspect-ratio:1/1; border-radius:8px; border:1px solid var(--border); overflow:hidden; touch-action:none; cursor:grab;
+    background-image: linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%);
+    background-size: 20px 20px; background-position: 0 0, 0 10px, 10px -10px, -10px 0px; background-color:#e9e9e9;
+  }
+  .editor-canvas-wrap canvas{width:100%; height:100%; display:block;}
+  .editor-row{margin-top:12px; font-size:0.78rem; color:var(--muted);}
+  .editor-row input[type=range]{width:100%;}
+  .editor-actions{display:flex; gap:8px; margin-top:16px;}
+  .editor-actions button{flex:1;}
+
+  /* Estilos especÃ­ficos Modal Didi Food */
+  .didi-header{display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border); padding-bottom:12px; margin-bottom:14px;}
+  .didi-header h2{margin:0; font-size:1.15rem; font-weight:700; display:flex; align-items:center; gap:8px;}
+  .didi-header .close-btn{background:none; border:none; font-size:1.3rem; line-height:1; padding:4px 8px; cursor:pointer; color:var(--muted);}
+  .didi-header .close-btn:hover{color:var(--text);}
+  .didi-section-title{font-size:0.95rem; font-weight:700; margin:16px 0 10px; color:var(--text); display:flex; align-items:center; justify-content:space-between;}
+  .didi-form-grid{display:flex; flex-direction:column; gap:12px;}
+  .didi-field{display:flex; flex-direction:column; gap:4px; position:relative;}
+  .didi-field label{font-size:0.78rem; font-weight:600; color:var(--muted);}
+  .didi-input-wrap{display:flex; gap:6px; align-items:center;}
+  .didi-input-wrap input[type=text], .didi-input-wrap textarea, .didi-input-wrap select{flex:1; margin:0;}
+  .copy-btn{padding:7px 10px; font-size:0.75rem; white-space:nowrap; display:flex; align-items:center; gap:4px; flex-shrink:0; background:var(--panel-2); border:1px solid var(--border); border-radius:7px; cursor:pointer;}
+  .copy-btn:hover{border-color:var(--accent); color:var(--accent);}
+  .ai-btn-inline{padding:7px 9px; font-size:0.75rem; background:var(--accent-soft); color:var(--accent-ink); border:1px solid var(--accent); border-radius:7px; cursor:pointer; white-space:nowrap;}
+  .ai-btn-inline:hover{filter:brightness(1.05);}
+  .didi-photo-section{display:flex; gap:16px; align-items:flex-start; margin:10px 0;}
+  .didi-photo-box{width:130px; height:130px; border:1px dashed var(--border); border-radius:10px; overflow:hidden; background:var(--panel-2); display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; position:relative; flex-shrink:0;}
+  .didi-photo-box img{width:100%; height:100%; object-fit:cover;}
+  .didi-photo-box.empty{color:var(--muted); font-size:0.72rem; padding:8px;}
+  .didi-photo-meta{flex:1; display:flex; flex-direction:column; gap:6px; font-size:0.76rem; color:var(--muted);}
+  .didi-photo-meta p{margin:0; line-height:1.4;}
+  .didi-footer-nav{display:flex; justify-content:space-between; align-items:center; gap:8px; border-top:1px solid var(--border); padding-top:14px; margin-top:18px; flex-wrap:wrap;}
+  .badge-db{background:#1E6F6322; color:var(--teal); font-size:0.68rem; font-weight:600; padding:2px 7px; border-radius:6px; border:1px solid var(--teal);}
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand">ðŸ“¦ Panel de catÃ¡logo</div>
+
+    <div class="navlist" id="navlist">
+      <button data-view="resumen" class="active">Resumen <span class="count" id="navCountResumen">â€“</span></button>
+      <button data-view="catalogo">CatÃ¡logo <span class="count" id="navCountCatalogo">0</span></button>
+      <button data-view="comparar">Comparar Rappi <span class="count" id="navCountComparar">â€“</span></button>
+    </div>
+
+    <div class="side-block">
+      <h3>1 Â· Excel con SKU</h3>
+      <label class="file-drop">
+        <input type="file" id="excelInput" accept=".xlsx,.xls,.csv">
+        ðŸ“„ Subir Excel / CSV
+        <span class="fname" id="excelName"></span>
+      </label>
+      <div id="excelCols" style="display:none;">
+        <label class="field-label" style="color:#9EA19B;">Columna del SKU</label>
+        <select id="skuCol"></select>
+        <label class="field-label" style="color:#9EA19B; margin-top:6px;">Columna del Nombre</label>
+        <select id="nameCol"></select>
+        <label class="field-label" style="color:#9EA19B; margin-top:6px;">Columna del Precio</label>
+        <select id="priceCol"></select>
+        <label class="field-label" style="color:#9EA19B; margin-top:6px;">Columna de CategorÃ­a</label>
+        <select id="catColSel"></select>
+      </div>
+    </div>
+
+    <div class="side-block">
+      <h3>2 Â· Fotos</h3>
+      <p class="hint">El nombre del archivo (nÃºmero) = SKU.</p>
+      <label class="file-drop">
+        <input type="file" id="photosInput" accept="image/*" multiple>
+        ðŸ–¼ï¸ Subir fotos
+        <span class="fname" id="photosName"></span>
+      </label>
+    </div>
+
+    <div class="side-block">
+    <div class="side-block">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h3 style="margin:0;">ðŸ’¾ Base de Datos Local</h3>
+        <span class="badge-db" id="dbBadge">0 guardados</span>
+      </div>
+      <p class="hint" id="dbHint">Todo lo que subas se guarda en este PC automÃ¡ticamente. Si cierras el navegador, no se pierde nada.</p>
+      <button class="wide" id="btnClearDb" style="color:var(--danger); border-color:var(--border);">ðŸ—‘ï¸ Limpiar BD / Nuevo catÃ¡logo</button>
+    </div>
+
+    <div class="side-block">
+      <h3>âœ¨ IA (TÃ­tulos y Descripciones)</h3>
+      <button class="wide primary" id="btnImproveAll">âœ¨ Mejorar tÃ­tulos y descripciones</button>
+      <button class="wide" id="btnClassify">ðŸ·ï¸ Clasificar categorÃ­as</button>
+      <button class="wide" id="btnOpenAiConfig" style="font-size:0.72rem;">âš™ï¸ Configurar API Key (Opcional)</button>
+      <p class="hint" id="iaHint" style="color:var(--teal);">Listo para usar. Utiliza optimizaciÃ³n inteligente local para Didi Food (o tu API Key de Gemini/OpenAI si la configuras).</p>
+    </div>
+
+    <div class="side-block">
+      <h3>Exportar</h3>
+      <button class="wide primary" id="btnExportCsv" disabled>CSV del catÃ¡logo</button>
+      <button class="wide" id="btnExportXlsx" disabled>Excel (.xlsx) del catÃ¡logo</button>
+      <button class="wide danger" id="btnExportMissingSide" disabled>âš ï¸ Excel faltantes de foto (<span id="sideMissingCount">0</span>)</button>
+      <button class="wide" id="btnExportZip" disabled>Fotos en .zip</button>
+      <label class="toggle-line"><input type="checkbox" id="optimizeToggle" checked> Optimizar fotos (cuadradas, mÃ¡x. 1080px) al descargar</label>
+    </div>
+
+    <p class="note">Base de datos local en tu equipo (IndexedDB). El Excel y las fotos se guardan en tu navegador sin subirse a ningÃºn servidor externo.</p>
+  </aside>
+
+  <div class="main-col">
+    <div class="topbar">
+      <div>
+        <h1 id="topbarTitle">Resumen</h1>
+        <p id="topbarSubtitle">Sube tu Excel y tus fotos para ver el estado de tu catÃ¡logo.</p>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- RESUMEN -->
+      <section class="view active" id="view-resumen">
+        <div id="dupWarning"></div>
+
+        <div class="progress-wrap">
+          <div class="row"><span>Fotos listas</span><span id="progressLabel">0 / 0</span></div>
+          <div class="progress-bar"><div id="progressBar" style="width:0%"></div></div>
+        </div>
+
+        <div class="cards-row">
+          <div class="stat-card"><div class="num" id="statTotal">0</div><div class="lbl">Productos</div></div>
+          <div class="stat-card" style="border-color:var(--teal);"><div class="num" id="statConFoto" style="color:var(--teal);">0</div><div class="lbl">Con foto lista</div></div>
+          <div class="stat-card warn"><div class="num" id="statSinFoto">0</div><div class="lbl">Sin foto (faltantes)</div></div>
+          <div class="stat-card"><div class="num" id="statOrfanas">0</div><div class="lbl">Fotos sin usar</div></div>
+          <div class="stat-card"><div class="num" id="statRevisados">0</div><div class="lbl">Revisados</div></div>
+        </div>
+
+        <div class="two-col">
+          <div class="panel-box">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
+              <h2 style="margin:0;">Pendientes de foto (<span id="boxMissingCount">0</span>)</h2>
+              <button class="danger" id="btnExportMissingBox" disabled style="font-size:0.75rem; padding:5px 10px;">ðŸ“¥ Exportar faltantes a Excel</button>
+            </div>
+            <div id="pendingList"><p class="empty-mini">Sube un Excel para ver esta lista.</p></div>
+          </div>
+          <div class="panel-box">
+            <h2 style="margin:0 0 10px;">Fotos sin usar (<span id="boxOrphanCount">0</span>)</h2>
+            <div id="orphanList"><p class="empty-mini">Sube fotos para ver esta lista.</p></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CATALOGO -->
+      <section class="view" id="view-catalogo">
+        <div class="toolbar">
+          <input type="text" id="search" placeholder="Buscar por SKU, nombre, categorÃ­aâ€¦">
+          <div class="chip-row" id="filterChips">
+            <span class="chip active" data-filter="todos">Todos (<b id="chipCountTodos">0</b>)</span>
+            <span class="chip" data-filter="con">Con foto (<b id="chipCountCon">0</b>)</span>
+            <span class="chip" data-filter="sin">Sin foto (<b id="chipCountSin">0</b>)</span>
+          </div>
+          <select id="estadoSelect">
+            <option value="todos">Todos los estados</option>
+            <option value="revisado">Revisados</option>
+            <option value="pendiente">Pendientes</option>
+          </select>
+          <select id="categoriaSelect">
+            <option value="todas">Todas las categorÃ­as</option>
+          </select>
+          <select id="sortSelect">
+            <option value="sku">Ordenar: SKU</option>
+            <option value="nombre">Ordenar: Nombre</option>
+            <option value="precio">Ordenar: Precio</option>
+            <option value="sinfoto">Ordenar: Sin foto primero</option>
+          </select>
+        </div>
+
+        <div class="bulkbar" id="bulkBar">
+          <span><b id="bulkCount">0</b> seleccionados</span>
+          <div class="spacer"></div>
+          <button id="bulkImprove">Mejorar texto (lote)</button>
+          <button id="bulkCopy">Copiar descripciones</button>
+          <button id="bulkExport">Exportar seleccionados (CSV)</button>
+          <button id="bulkClear">Quitar selecciÃ³n</button>
+        </div>
+
+        <div id="gridWrap">
+          <div class="empty">Sube tu Excel para empezar a armar las fichas de producto.</div>
+        </div>
+      </section>
+
+      <!-- COMPARAR -->
+      <section class="view" id="view-comparar">
+        <div class="panel-box">
+          <h2>Comparar con tu catÃ¡logo de Rappi</h2>
+          <p class="hint" style="color:var(--muted); font-size:0.8rem;">No puedo conectarme directamente a tu tienda Rappi desde aquÃ­. Exporta el listado de SKUs desde tu panel de Rappi a Excel/CSV y lo comparo contra este catÃ¡logo.</p>
+          <label class="file-drop" style="border-color:var(--border); color:var(--muted); background:var(--panel-2); max-width:320px;">
+            <input type="file" id="rappiInput" accept=".xlsx,.xls,.csv">
+            ðŸ” Subir Excel de Rappi
+            <span class="fname" id="rappiName"></span>
+          </label>
+          <div id="rappiColWrap" style="display:none; max-width:280px;">
+            <label class="field-label">Columna con el SKU (Rappi)</label>
+            <select id="rappiCol"></select>
+          </div>
+          <div id="compareResult"></div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- MODAL SELECTOR DE FOTO -->
+<div class="modal-overlay" id="photoPickerOverlay">
+  <div class="modal-box" style="max-width:700px; width:95vw;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:8px;">
+      <h2 style="margin:0; font-size:1rem;" id="photoPickerTitle">Asignar foto</h2>
+      <button id="photoPickerClose" style="font-size:1.1rem; padding:4px 10px;">âœ•</button>
+    </div>
+    <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; align-items:center;">
+      <input type="text" id="photoPickerSearch" placeholder="Buscar foto por nombreâ€¦" style="flex:1; min-width:160px; padding:7px 10px; font-size:0.82rem;">
+      <label class="file-drop" style="flex-shrink:0; border-radius:8px; padding:8px 14px; font-size:0.78rem; margin:0; border:1px dashed var(--border); cursor:pointer; background:var(--panel-2); color:var(--text);">
+        <input type="file" id="photoPickerUpload" accept="image/*" multiple>
+        âž• Subir foto nueva
+      </label>
+    </div>
+    <p style="font-size:0.74rem; color:var(--muted); margin:0 0 10px;">Haz clic en una foto para asignarla al producto. Las fotos <span style="color:var(--danger); font-weight:600;">rojas</span> no estÃ¡n asignadas a ningÃºn producto.</p>
+    <div id="photoPickerGrid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:10px; max-height:55vh; overflow-y:auto; padding:2px;"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="editorOverlay">
+  <div class="modal-box">
+    <h2 id="editorTitle">Editar foto</h2>
+    <div class="editor-canvas-wrap" id="editorCanvasWrap">
+      <canvas id="editorCanvas" width="600" height="600"></canvas>
+    </div>
+    <div class="editor-row">
+      <label>Zoom / recorte</label>
+      <input type="range" id="editorZoom" min="1" max="3" step="0.01" value="1">
+    </div>
+    <div class="editor-row">
+      <label>Brillo</label>
+      <input type="range" id="editorBrightness" min="60" max="150" step="1" value="100">
+    </div>
+    <div class="editor-row">
+      <label>Contraste</label>
+      <input type="range" id="editorContrast" min="60" max="150" step="1" value="100">
+    </div>
+    <div class="editor-row">
+      <label style="display:flex; align-items:center; gap:6px; color:var(--text); font-size:0.82rem;">
+        <input type="checkbox" id="editorWhiteBg"> Rellenar fondo transparente con blanco
+      </label>
+      <p style="margin:4px 0 0; font-size:0.7rem; color:var(--muted);">Arrastra la foto para moverla dentro del cuadro. El fondo a cuadros indica transparencia (PNG); si tu foto ya tiene fondo blanco sÃ³lido, no necesitas marcar esta opciÃ³n.</p>
+    </div>
+    <div class="editor-actions">
+      <button id="editorCancel">Cancelar</button>
+      <button class="primary" id="editorSave">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL VENTANA DE PRODUCTO ESTILO DIDI FOOD -->
+<div class="modal-overlay" id="didiModal">
+  <div class="modal-box wide-modal">
+    <div class="didi-header">
+      <h2><span>ðŸ½ï¸</span> Ficha de artÃ­culo â€” Didi Food</h2>
+      <button class="close-btn" id="didiCloseBtn" title="Cerrar (Esc)">âœ•</button>
+    </div>
+
+    <div class="didi-section-title">
+      <span>InformaciÃ³n bÃ¡sica</span>
+      <button class="ai-btn-inline" id="didiImproveAllBtn">âœ¨ Mejorar todo con IA</button>
+    </div>
+
+    <div class="didi-form-grid">
+      <!-- CÃ³digo de barras / SKU -->
+      <div class="didi-field">
+        <label>CÃ³digo de barras del artÃ­culo / SKU</label>
+        <div class="didi-input-wrap">
+          <input type="text" id="didiSku" placeholder="CÃ³digo de barras o SKU">
+          <button class="copy-btn" data-target="didiSku">ðŸ“‹ Copiar</button>
+        </div>
+      </div>
+
+      <!-- Nombre del artÃ­culo -->
+      <div class="didi-field">
+        <label>Nombre del artÃ­culo</label>
+        <div class="didi-input-wrap">
+          <input type="text" id="didiNombre" placeholder="Nombre comercial del producto">
+          <button class="ai-btn-inline" id="didiImproveTitleBtn">âœ¨ Mejorar</button>
+          <button class="copy-btn" data-target="didiNombre">ðŸ“‹ Copiar</button>
+        </div>
+      </div>
+
+      <!-- Agregar / Ver foto -->
+      <div class="didi-field">
+        <label>Foto del artÃ­culo (Requisitos: JPG, PNG, al menos 150x150)</label>
+        <div class="didi-photo-section">
+          <div class="didi-photo-box" id="didiPhotoBox">
+            <span class="empty">Sin foto</span>
+          </div>
+          <div class="didi-photo-meta">
+            <p id="didiPhotoStatus" style="font-weight:600;">Estado: Sin foto asignada</p>
+            <p style="font-size:0.7rem;">Puedes cambiar o editar la imagen aquÃ­ mismo para que cumpla los requisitos de Didi Food.</p>
+            <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:4px;">
+              <label class="copy-btn" style="cursor:pointer;">
+                ðŸ“· Subir foto
+                <input type="file" id="didiPhotoInput" accept="image/*" style="display:none;">
+              </label>
+              <button class="copy-btn" id="didiEditPhotoBtn">âœï¸ Editar foto</button>
+              <button class="copy-btn" id="didiDownloadPhotoBtn">ðŸ“¥ Descargar foto</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DescripciÃ³n -->
+      <div class="didi-field">
+        <label>DescripciÃ³n (Describe los ingredientes, mÃ©todos de preparaciÃ³n, etc.)</label>
+        <div class="didi-input-wrap" style="align-items:flex-start;">
+          <textarea id="didiDesc" rows="3" placeholder="DescripciÃ³n atractiva para los clientes de Didi Food"></textarea>
+          <div style="display:flex; flex-direction:column; gap:4px;">
+            <button class="ai-btn-inline" id="didiImproveDescBtn">âœ¨ Mejorar</button>
+            <button class="copy-btn" data-target="didiDesc">ðŸ“‹ Copiar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- IdentificaciÃ³n adicional -->
+      <div class="didi-field">
+        <label>IdentificaciÃ³n adicional (Nombre original del Excel)</label>
+        <div class="didi-input-wrap">
+          <input type="text" id="didiSkuOrig" placeholder="IdentificaciÃ³n adicional">
+          <button class="copy-btn" data-target="didiSkuOrig">ðŸ“‹ Copiar</button>
+        </div>
+      </div>
+
+      <!-- Precio y Stock -->
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <div class="didi-field">
+          <label>Establece el precio ($)</label>
+          <div class="didi-input-wrap">
+            <input type="text" id="didiPrecio" placeholder="0">
+            <button class="copy-btn" data-target="didiPrecio">ðŸ“‹ Copiar</button>
+          </div>
+        </div>
+        <div class="didi-field">
+          <label>Cantidad disponible (Stock)</label>
+          <div class="didi-input-wrap">
+            <input type="text" id="didiStock" placeholder="Ilimitado o cantidad">
+            <button class="copy-btn" data-target="didiStock">ðŸ“‹ Copiar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CategorÃ­a definida por la tienda -->
+      <div class="didi-field">
+        <label>CategorÃ­a definida por la tienda</label>
+        <div class="didi-input-wrap">
+          <input type="text" id="didiCategoria" list="didiCatList" placeholder="Ej: Bebidas, Snacks, Abarrotes...">
+          <datalist id="didiCatList"></datalist>
+          <button class="copy-btn" data-target="didiCategoria">ðŸ“‹ Copiar</button>
+        </div>
+      </div>
+
+      <!-- MÃ¡s informaciÃ³n -->
+      <div class="didi-section-title">MÃ¡s informaciÃ³n</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <div class="didi-field">
+          <label>Peso (g)</label>
+          <div class="didi-input-wrap">
+            <input type="text" id="didiPeso" placeholder="Ej: 500">
+            <button class="copy-btn" data-target="didiPeso">ðŸ“‹</button>
+          </div>
+        </div>
+        <div class="didi-field">
+          <label>Volumen (ml)</label>
+          <div class="didi-input-wrap">
+            <input type="text" id="didiVolumen" placeholder="Ej: 350">
+            <button class="copy-btn" data-target="didiVolumen">ðŸ“‹</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <div class="didi-field">
+          <label>CondiciÃ³n de almacenamiento</label>
+          <select id="didiAlmacenamiento">
+            <option value="Ambiente">Ambiente</option>
+            <option value="Refrigerado">Refrigerado</option>
+            <option value="Congelado">Congelado</option>
+          </select>
+        </div>
+        <div class="didi-field">
+          <label>Especificaciones del paquete</label>
+          <input type="text" id="didiEspecificaciones" placeholder="Ej: 1 Unidad / Caja">
+        </div>
+      </div>
+    </div>
+
+    <!-- NavegaciÃ³n inferior -->
+    <div class="didi-footer-nav">
+      <div style="display:flex; gap:6px;">
+        <button id="didiPrevBtn">â¬… Anterior</button>
+        <button id="didiNextBtn">Siguiente âž¡</button>
+        <span id="didiProductCounter" style="align-self:center; font-size:0.75rem; color:var(--muted); font-family:var(--mono); margin-left:4px;">1 / 1</span>
+      </div>
+      <div style="display:flex; gap:6px;">
+        <button id="didiCopyAllBtn" class="copy-btn" style="border-color:var(--accent); color:var(--accent);">ðŸ“‹ Copiar ficha para Didi</button>
+        <button id="didiSaveBtn" class="primary">ðŸ’¾ Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CONFIGURACION IA -->
+<div class="modal-overlay" id="aiConfigModal">
+  <div class="modal-box">
+    <div class="didi-header">
+      <h2>âš™ï¸ ConfiguraciÃ³n de IA</h2>
+      <button class="close-btn" id="aiConfigCloseBtn">âœ•</button>
+    </div>
+    <p style="font-size:0.78rem; color:var(--muted); line-height:1.4;">
+      Por defecto, el panel usa un <b>motor inteligente local optimizado para Didi Food</b> que funciona sin internet, gratis y sin lÃ­mites en tu PC.
+    </p>
+    <div class="didi-field" style="margin-top:10px;">
+      <label>Modo de IA</label>
+      <select id="aiProviderSelect">
+        <option value="local">Motor Inteligente Local (Gratis, offline, instantÃ¡neo)</option>
+        <option value="gemini">Google Gemini (Requiere API Key gratuita)</option>
+        <option value="openai">OpenAI ChatGPT (Requiere API Key)</option>
+      </select>
+    </div>
+    <div class="didi-field" id="apiKeyWrap" style="display:none; margin-top:10px;">
+      <label>API Key</label>
+      <input type="password" id="aiApiKey" placeholder="Pega tu clave aquÃ­ (se guarda solo en tu PC)">
+    </div>
+    <div class="editor-actions" style="margin-top:16px;">
+      <button id="aiConfigCancelBtn">Cancelar</button>
+      <button class="primary" id="aiConfigSaveBtn">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- state ----------
+  let excelRows = [], excelHeaders = [], skuColIndex = -1, rawExcelAOA = [];
+  let nameColIndex = -1, priceColIndex = -1, catColIndex = -1; // columnas mapeadas por usuario
+  let images = [];
+  let items = [];
+  let manualAssign = new Map(); // skuNorm -> imageBase (asignaciÃ³n desde fotos huÃ©rfanas)
+  let manualImages = new Map(); // skuNorm -> {file,name,url} (foto propia adjuntada por producto)
+  let selected = new Set(); // sku
+  let currentFilter = "todos", estadoFilter = "todos", categoriaFiltro = "todas", sortBy = "sku", searchTerm = "";
+  let sampleCap = null, downloadsCap = null;
+  let duplicateSkus = [];
+
+  // Notas/ediciones manuales guardadas en localStorage
+  const NOTES_KEY = "catalogo_panel_notas_v1";
+  function loadNotes(){ try{ return JSON.parse(localStorage.getItem(NOTES_KEY) || "{}"); }catch(e){ return {}; } }
+  function saveNotes(n){ localStorage.setItem(NOTES_KEY, JSON.stringify(n)); }
+  let notes = loadNotes();
+
+  const $ = (sel) => document.querySelector(sel);
+  const gridWrap = $("#gridWrap");
+  const toastEl = $("#toast");
+
+  function toast(msg){
+    toastEl.textContent = msg;
+    toastEl.classList.add("show");
+    clearTimeout(toast._t);
+    toast._t = setTimeout(()=>toastEl.classList.remove("show"), 2600);
+  }
+  function normKey(s){ return (s===undefined||s===null) ? "" : String(s).trim().toLowerCase().replace(/[^a-z0-9]/g,""); }
+  function stripExt(name){ return name.replace(/\.[^.\/]+$/,""); }
+
+  function isHeaderRow(val){
+    const norm = String(val||"").trim().toLowerCase();
+    return norm === "sku" || norm === "cÃ³digo" || norm === "codigo" || norm === "id" || norm === "referencia";
+  }
+
+  // Extrae solo los nÃºmeros despuÃ©s del guion bajo "_" (ej: Home4Veinte4mt_2913 -> 2913)
+  function extractSkuNumber(raw){
+    if (raw === undefined || raw === null) return "";
+    const s = String(raw).trim();
+    if (isHeaderRow(s)) return "";
+    if (s.includes("_")) {
+      const after = s.split("_").pop();
+      const match = after.match(/\d+/);
+      if (match) return match[0];
+    }
+    // Si no contiene guion bajo, buscar si contiene nÃºmero
+    const digits = s.match(/\d+/);
+    return digits ? digits[0] : s;
+  }
+
+  // Guarda un archivo usando la capacidad de Claude si estÃ¡ disponible; si no
+  // (por ejemplo al publicar esta pÃ¡gina en GitHub Pages u otro hosting),
+  // usa la descarga nativa del navegador para que siga funcionando igual.
+  async function saveFile(filename, data){
+    if (downloadsCap){
+      try{ await downloadsCap.save({filename, data}); return "ok"; }
+      catch(e){ if (e && e.code === "declined") return "declined"; }
+    }
+    try{
+      const blob = (data instanceof Blob) ? data : new Blob([data], {type:"application/octet-stream"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(()=>URL.revokeObjectURL(url), 4000);
+      return "ok";
+    }catch(e){ return "error"; }
+  }
+
+  // ---------- Base de Datos Local en tu PC (IndexedDB) ----------
+  const DB_NAME = "CatalogoDidiDB_v2";
+  const DB_VERSION = 1;
+  let dbInstance = null;
+
+  function dbOpen(){
+    return new Promise((resolve, reject) => {
+      if (dbInstance) return resolve(dbInstance);
+      const req = indexedDB.open(DB_NAME, DB_VERSION);
+      req.onupgradeneeded = (e) => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains("products")) {
+          db.createObjectStore("products", {keyPath:"skuNorm"});
+        }
+        if (!db.objectStoreNames.contains("images")) {
+          db.createObjectStore("images", {keyPath:"key"});
+        }
+        if (!db.objectStoreNames.contains("meta")) {
+          db.createObjectStore("meta", {keyPath:"id"});
+        }
+      };
+      req.onsuccess = () => { dbInstance = req.result; resolve(dbInstance); };
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async function dbSaveAll(){
+    try{
+      const db = await dbOpen();
+      const tx = db.transaction(["products", "meta"], "readwrite");
+      const prodStore = tx.objectStore("products");
+      items.forEach(it => {
+        prodStore.put({
+          sku: it.sku,
+          skuNorm: it.skuNorm,
+          title: it.title,
+          desc: it.desc,
+          aiCategory: it.aiCategory,
+          revisado: it.revisado,
+          row: it.row,
+          hasImage: !!it.image
+        });
+      });
+      const metaStore = tx.objectStore("meta");
+      metaStore.put({
+        id: "current_catalog",
+        excelHeaders: excelHeaders,
+        rawExcelAOA: rawExcelAOA,
+        skuColIndex: skuColIndex,
+        updatedAt: new Date().toISOString()
+      });
+      updateDbBadge();
+    }catch(err){
+      console.warn("Error guardando en BD local:", err);
+    }
+  }
+
+  async function dbSaveImages(imgs){
+    try{
+      const db = await dbOpen();
+      const tx = db.transaction("images", "readwrite");
+      const store = tx.objectStore("images");
+      for (const im of imgs){
+        if (im.file){
+          store.put({
+            key: im.base,
+            name: im.name,
+            blob: im.file,
+            numKey: im.numKey
+          });
+        }
+      }
+      updateDbBadge();
+    }catch(err){
+      console.warn("Error guardando fotos en BD:", err);
+    }
+  }
+
+  async function dbLoadAll(){
+    try{
+      const db = await dbOpen();
+
+      // Helper: wrap a single IDBRequest in a Promise
+      function reqToPromise(req){
+        return new Promise((res, rej) => {
+          req.onsuccess = () => res(req.result);
+          req.onerror   = () => rej(req.error);
+        });
+      }
+
+      // â”€â”€ 1. Leer meta en transacciÃ³n propia â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      const meta = await reqToPromise(
+        db.transaction(["meta"], "readonly").objectStore("meta").get("current_catalog")
+      );
+      if (!meta || !meta.excelHeaders || !meta.excelHeaders.length){
+        updateDbBadge();
+        return;
+      }
+      excelHeaders  = meta.excelHeaders;
+      rawExcelAOA   = meta.rawExcelAOA || [];
+      skuColIndex   = meta.skuColIndex !== undefined ? meta.skuColIndex : 0;
+      if ($("#excelCols")) $("#excelCols").style.display = "block";
+      populateColSelects();
+
+      // â”€â”€ 2. Leer imÃ¡genes en transacciÃ³n propia â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      const storedImgs = await reqToPromise(
+        db.transaction(["images"], "readonly").objectStore("images").getAll()
+      );
+      if (storedImgs && storedImgs.length){
+        images = storedImgs.map(si => ({
+          file: si.blob,
+          name: si.name,
+          base: si.key,
+          numKey: si.numKey,
+          url: URL.createObjectURL(si.blob)
+        }));
+        if ($("#photosName")) $("#photosName").textContent = `${images.length} foto(s) en BD`;
+      }
+
+      // â”€â”€ 3. Leer productos en transacciÃ³n propia â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      const storedProds = await reqToPromise(
+        db.transaction(["products"], "readonly").objectStore("products").getAll()
+      );
+      if (storedProds && storedProds.length){
+        rebuildRowsFromAOA();
+        storedProds.forEach(sp => {
+          notes[sp.skuNorm] = {
+            title: sp.title,
+            desc: sp.desc,
+            revisado: sp.revisado,
+            aiCategory: sp.aiCategory
+          };
+        });
+        rebuildItems();
+        toast(`Base de datos cargada: ${items.length} productos en este PC`);
+      }
+
+      updateDbBadge();
+    }catch(err){
+      console.warn("No se pudo cargar desde BD local:", err);
+      updateDbBadge();
+    }
+  }
+
+  async function dbClearAll(){
+    if (!confirm("Â¿Deseas vaciar la base de datos local y empezar de cero? Se borrarÃ¡n los productos y fotos guardados en este PC.")) return;
+    try{
+      const db = await dbOpen();
+      const tx = db.transaction(["products", "images", "meta"], "readwrite");
+      tx.objectStore("products").clear();
+      tx.objectStore("images").clear();
+      tx.objectStore("meta").clear();
+      notes = {};
+      saveNotes(notes);
+      items = [];
+      images = [];
+      excelRows = [];
+      rawExcelAOA = [];
+      excelHeaders = [];
+      $("#excelCols").style.display = "none";
+      $("#excelName").textContent = "";
+      $("#photosName").textContent = "";
+      rebuildItems();
+      updateDbBadge();
+      toast("Base de datos local vaciada con Ã©xito");
+    }catch(err){
+      toast("Error al limpiar base de datos");
+    }
+  }
+
+  function updateDbBadge(){
+    const b = $("#dbBadge");
+    if (b) b.textContent = items.length ? `${items.length} en PC` : "0 guardados";
+    const h = $("#dbHint");
+    if (h) h.textContent = items.length
+      ? `Hay ${items.length} productos y ${images.length} fotos guardados en tu PC.`
+      : "Todo lo que subas se guarda en este PC automÃ¡ticamente. Si cierras el navegador, no se pierde nada.";
+  }
+
+  // ---------- ConfiguraciÃ³n de IA (Local vs API) ----------
+  const AI_CONFIG_KEY = "catalogo_ai_config_v1";
+  function loadAiConfig(){
+    try{ return JSON.parse(localStorage.getItem(AI_CONFIG_KEY) || '{"provider":"local","apiKey":""}'); }catch(e){ return {provider:"local", apiKey:""}; }
+  }
+  function saveAiConfig(cfg){
+    localStorage.setItem(AI_CONFIG_KEY, JSON.stringify(cfg));
+  }
+  let aiConfig = loadAiConfig();
+
+  function refreshIaButtons(){
+    $("#btnClassify").disabled = !items.length;
+    $("#btnImproveAll").disabled = !items.length;
+  }
+
+  // ---------- lectura de excel ----------
+  function guessSkuColumn(headers){
+    const patterns = [/^sku$/i, /codigo/i, /cÃ³digo/i, /^id$/i, /referencia/i, /^ref$/i];
+    for (const p of patterns){ const idx = headers.findIndex(h => p.test(String(h||"").trim())); if (idx !== -1) return idx; }
+    return 0;
+  }
+  function parseWorkbook(file, cb){
+    const reader = new FileReader();
+    reader.onload = function(e){
+      try{
+        const data = new Uint8Array(e.target.result);
+        const wb = XLSX.read(data, {type:"array"});
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        const aoa = XLSX.utils.sheet_to_json(sheet, {header:1, defval:"", raw:false});
+        let headerRowIdx = aoa.findIndex(r => r.some(c => String(c).trim() !== ""));
+        if (headerRowIdx === -1) headerRowIdx = 0;
+        const headers = (aoa[headerRowIdx] || []).map(h => String(h).trim());
+        const rows = aoa.slice(headerRowIdx+1).filter(r => r.some(c => String(c).trim() !== ""));
+        cb(null, {headers, rows});
+      }catch(err){ cb(err); }
+    };
+    reader.onerror = function(){ cb(new Error("No se pudo leer el archivo")); };
+    reader.readAsArrayBuffer(file);
+  }
+
+  $("#excelInput").addEventListener("change", function(e){
+    const file = e.target.files[0]; if (!file) return;
+    // Resetear estado previo para evitar conflicto con datos de BD
+    rawExcelAOA = [];
+    excelRows = [];
+    $("#excelName").textContent = file.name;
+    parseWorkbook(file, function(err, res){
+      if (err){ toast("No pude leer ese Excel. Â¿Es .xlsx, .xls o .csv?"); return; }
+      excelHeaders = res.headers; rawExcelAOA = res.rows;
+      skuColIndex = guessSkuColumn(excelHeaders);
+      populateColSelects();
+      $("#excelCols").style.display = "block";
+      rebuildRowsFromAOA();
+      rebuildItems();
+      toast(`Excel cargado: ${rawExcelAOA.length} filas`);
+    });
+  });
+  function guessNameColumn(headers){
+    const patterns = [/^nombre$/i, /^producto$/i, /^name$/i, /descripcion_corta/i, /titulo/i, /tÃ­tulo/i, /^articulo$/i, /^item$/i];
+    for (const p of patterns){ const idx = headers.findIndex(h => p.test(String(h||"").trim())); if (idx !== -1) return idx; }
+    // Fallback: first column that is NOT the SKU column and has mostly text values
+    return headers.findIndex((h, i) => i !== skuColIndex && !/precio|price|valor|stock|cantidad|peso|categor/i.test(h||""));
+  }
+  function guessPriceColumn(headers){
+    const patterns = [/precio/i, /price/i, /valor/i, /costo/i, /pvp/i];
+    for (const p of patterns){ const idx = headers.findIndex(h => p.test(String(h||"").trim())); if (idx !== -1) return idx; }
+    return -1;
+  }
+  function guessCatColumn(headers){
+    const patterns = [/categor/i, /dept/i, /departamento/i, /grupo/i, /seccion/i, /secciÃ³n/i];
+    for (const p of patterns){ const idx = headers.findIndex(h => p.test(String(h||"").trim())); if (idx !== -1) return idx; }
+    return -1;
+  }
+
+  function populateColSelects(){
+    // Auto-detect if not yet set
+    if (nameColIndex === -1) nameColIndex = guessNameColumn(excelHeaders);
+    if (priceColIndex === -1) priceColIndex = guessPriceColumn(excelHeaders);
+    if (catColIndex === -1) catColIndex = guessCatColumn(excelHeaders);
+
+    function fillSel(id, currentIdx, allowNone){
+      const sel = $(id); if (!sel) return;
+      sel.innerHTML = allowNone ? `<option value="-1">â€” Ninguna â€”</option>` : "";
+      excelHeaders.forEach((h, i) => {
+        const opt = document.createElement("option");
+        opt.value = i; opt.textContent = h || `Columna ${i+1}`;
+        if (i === currentIdx) opt.selected = true;
+        sel.appendChild(opt);
+      });
+    }
+    fillSel("#skuCol", skuColIndex, false);
+    fillSel("#nameCol", nameColIndex, false);
+    fillSel("#priceCol", priceColIndex, true);
+    fillSel("#catColSel", catColIndex, true);
+  }
+
+  $("#skuCol").addEventListener("change", function(e){
+    skuColIndex = parseInt(e.target.value, 10);
+    rebuildRowsFromAOA(); rebuildItems();
+  });
+  $("#nameCol").addEventListener("change", function(e){
+    nameColIndex = parseInt(e.target.value, 10);
+    // Borrar tÃ­tulos cacheados para que se regeneren con la nueva columna
+    Object.keys(notes).forEach(k => { if (notes[k]) delete notes[k].title; });
+    rebuildItems();
+  });
+  $("#priceCol").addEventListener("change", function(e){
+    priceColIndex = parseInt(e.target.value, 10);
+    rebuildItems();
+  });
+  $("#catColSel").addEventListener("change", function(e){
+    catColIndex = parseInt(e.target.value, 10);
+    rebuildItems();
+  });
+
+  function rebuildRowsFromAOA(){
+    const seen = new Map();
+    excelRows = rawExcelAOA.map(r => {
+      const skuRaw = r[skuColIndex] !== undefined ? String(r[skuColIndex]).trim() : "";
+      if (!skuRaw || isHeaderRow(skuRaw)) return null;
+      const skuClean = extractSkuNumber(skuRaw);
+      if (!skuClean) return null;
+
+      const obj = {};
+      excelHeaders.forEach((h, i) => { obj[h || `col${i}`] = r[i] !== undefined ? String(r[i]).trim() : ""; });
+      obj.__skuOriginal = skuRaw;
+      obj.__sku = skuClean;
+      obj.__skuNorm = normKey(skuClean);
+      return obj;
+    }).filter(Boolean);
+    const counts = {};
+    excelRows.forEach(o => { counts[o.__skuNorm] = (counts[o.__skuNorm]||0)+1; });
+    duplicateSkus = excelRows.filter(o => counts[o.__skuNorm] > 1).map(o => o.__sku)
+      .filter((v,i,a)=>a.indexOf(v)===i);
+    renderDupWarning();
+  }
+
+  function renderDupWarning(){
+    const el = $("#dupWarning");
+    if (!el) return;
+    if (!duplicateSkus.length){ el.innerHTML = ""; return; }
+    el.innerHTML = `<div class="warn-banner">âš ï¸ Hay ${duplicateSkus.length} SKU repetidos en tu Excel: ${duplicateSkus.slice(0,15).map(s=>`<b>${s}</b>`).join(", ")}${duplicateSkus.length>15?"â€¦":""}. RevÃ­salos para no duplicar productos en Didi Food.</div>`;
+  }
+
+  // ---------- fotos ----------
+  $("#photosInput").addEventListener("change", function(e){
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    images = files.map(f => {
+      const baseName = stripExt(f.name);
+      return {
+        file: f,
+        name: f.name,
+        base: normKey(baseName),
+        numKey: extractSkuNumber(baseName),
+        url: URL.createObjectURL(f)
+      };
+    });
+    $("#photosName").textContent = `${files.length} foto(s)`;
+    rebuildItems();
+    toast(`${files.length} foto(s) cargadas`);
+  });
+
+  // ---------- merge & IA Inteligente ----------
+  function guessCol(re){ return excelHeaders.find(h => re.test(h||"")); }
+
+  const ABBREV_MAP = {
+    "CERV": "Cerveza", "CRV": "Cerveza", "BOT": "Botella", "BOTELLA": "Botella",
+    "LAT": "Lata", "LATA": "Lata", "PAQ": "Paquete", "PQ": "Paquete", "PAQUETE": "Paquete",
+    "RET": "Retornable", "DESC": "Desechable", "UND": "Und", "UNID": "Und", "UNIDADES": "Unidades",
+    "GR": "g", "GRS": "g", "KG": "kg", "KILO": "kg", "ML": "ml", "LT": "L", "LTS": "L"
+  };
+
+  function smartCleanTitle(rawTitle, row){
+    if (!rawTitle) {
+      const nameCol = guessCol(/nombre|producto|tÃ­tulo|titulo|^name$/i);
+      rawTitle = (nameCol && row && row[nameCol]) ? row[nameCol] : (row ? (row.__skuOriginal || row.__sku) : "");
+    }
+    let s = String(rawTitle).trim();
+    // Limpiar guiones bajos
+    s = s.replace(/_/g, " ");
+    // Limpiar prefijos de sistema tipo Home4Veinte4mt
+    s = s.replace(/home\d+veinte\d+[a-z]*/gi, "").trim();
+
+    const words = s.split(/\s+/).filter(Boolean);
+    const cleanedWords = words.map(w => {
+      const cleanW = w.toUpperCase().replace(/[^A-Z0-9]/g, "");
+      if (ABBREV_MAP[cleanW]) return ABBREV_MAP[cleanW];
+      const measMatch = w.match(/^(\d+(?:[.,]\d+)?)\s*(ml|l|lt|lts|g|gr|grs|kg)$/i);
+      if (measMatch){
+        const unit = measMatch[2].toLowerCase();
+        return `${measMatch[1]} ${unit === "l" || unit === "lt" || unit === "lts" ? "L" : unit}`;
+      }
+      if (w.length > 1 && w === w.toUpperCase()){
+        return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+      }
+      return w;
+    });
+
+    let clean = cleanedWords.join(" ").trim();
+    if (clean) clean = clean.charAt(0).toUpperCase() + clean.slice(1);
+    return clean || rawTitle;
+  }
+
+  function smartGenerateDesc(item){
+    const title = item.title || smartCleanTitle("", item.row);
+    const cat = getCategoryOf(item).toLowerCase();
+    const row = item.row || {};
+
+    let sizeInfo = "";
+    const sizeMatch = title.match(/(\d+(?:[.,]\d+)?\s*(?:ml|l|g|kg|unidades|und))/i);
+    if (sizeMatch) sizeInfo = ` en presentaciÃ³n de ${sizeMatch[1]}`;
+
+    let template = "";
+    if (/bebida|gaseosa|agua|jugo|refresco|soda/i.test(cat) || /coca|pepsi|postobon|hit|agua|jugo|sprite|quatro/i.test(title)){
+      template = `Refrescante y de gran sabor, perfecta para acompaÃ±ar tus comidas favoritas o refrescar tu dÃ­a${sizeInfo}. DisfrÃºtala bien frÃ­a.`;
+    } else if (/cerveza|licor|vino|whisky|ron|aguardiente|vodka/i.test(cat) || /cerveza|corona|poker|aguila|club|heineken|smirnoff/i.test(title)){
+      template = `Excelente opciÃ³n para compartir en reuniones o disfrutar en ocasiones especiales${sizeInfo}. Calidad y sabor garantizado bien frÃ­o.`;
+    } else if (/snack|papas|platanos|pasabocas|galletas|dulces|chocolate/i.test(cat) || /doritos|lays|margarita|de todito|choclitos/i.test(title)){
+      template = `El snack crujiente y delicioso ideal para calmar tus antojos en cualquier momento del dÃ­a${sizeInfo}. Listo para disfrutar.`;
+    } else if (/lacteo|leche|queso|yogurt|mantequilla/i.test(cat)){
+      template = `Producto fresco y nutritivo de la mejor calidad, indispensable para tus desayunos y recetas diarias en casa${sizeInfo}.`;
+    } else if (/despensa|abarrotes|arroz|aceite|granos|pasta/i.test(cat)){
+      template = `Ingrediente esencial para tu cocina con excelente rendimiento y calidad seleccionada para preparar tus mejores platos${sizeInfo}.`;
+    } else if (/limpieza|aseo|hogar|papel|jabon/i.test(cat)){
+      template = `Producto de alta eficacia y rendimiento para el cuidado y la higiene diaria de tu hogar${sizeInfo}.`;
+    } else {
+      template = `${title} de excelente calidad${sizeInfo}, seleccionado especialmente para ti. PrÃ¡ctico y listo para disfrutar.`;
+    }
+    return template;
+  }
+
+  function buildInitialTitle(row){
+    // Usar la columna mapeada por el usuario (nameColIndex) si está disponible
+    let raw = "";
+    if (nameColIndex >= 0 && excelHeaders[nameColIndex]){
+      raw = row[excelHeaders[nameColIndex]] || "";
+    }
+    if (!raw){
+      // Fallback: intentar con guessCol
+      const nameCol = guessCol(/nombre|producto|título|titulo|^name$/i);
+      raw = (nameCol && row[nameCol]) ? row[nameCol] : "";
+    }
+    if (!raw) raw = row.__skuOriginal || row.__sku;
+    return smartCleanTitle(raw, row);
+  }
+
+  function buildInitialDescription(row){
+    const descCol = guessCol(/descrip/i);
+    if (descCol && row[descCol]) return row[descCol];
+    return smartGenerateDesc({row, title: buildInitialTitle(row)});
+  }
+
+  function findImageFor(row){
+    const own = manualImages.get(row.__skuNorm);
+    if (own) return own;
+    const override = manualAssign.get(row.__skuNorm);
+    if (override) return images.find(im => im.base === override || im.numKey === override) || null;
+    return images.find(im => im.base === row.__skuNorm || (im.numKey && im.numKey === row.__skuNorm) || im.name.startsWith(row.__sku + ".")) || null;
+  }
+
+  function getCategoryOf(item){
+    if (item.aiCategory) return item.aiCategory;
+    const catCol = guessCol(/categor/i);
+    if (catCol && item.row && item.row[catCol]) return item.row[catCol];
+    return "Sin categorÃ­a";
+  }
+
+  function populateCategoriaSelect(){
+    const sel = $("#categoriaSelect");
+    const didiCatList = $("#didiCatList");
+    const cats = [...new Set(items.map(getCategoryOf))].sort((a,b)=>a.localeCompare(b));
+    const prevValue = categoriaFiltro;
+    sel.innerHTML = `<option value="todas">Todas las categorÃ­as</option>` + cats.map(c=>`<option value="${c}">${c}</option>`).join("");
+    if (didiCatList) didiCatList.innerHTML = cats.map(c=>`<option value="${c}"></option>`).join("");
+    if (cats.includes(prevValue)) sel.value = prevValue; else { categoriaFiltro = "todas"; sel.value = "todas"; }
+  }
+
+  function rebuildItems(){
+    items = excelRows.map(row => {
+      const img = findImageFor(row);
+      const saved = notes[row.__skuNorm] || {};
+      const prevLive = items.find(it => it.sku === row.__sku);
+      return {
+        sku: row.__sku, skuNorm: row.__skuNorm, row: row, image: img,
+        title: prevLive ? prevLive.title : (saved.title !== undefined ? saved.title : buildInitialTitle(row)),
+        desc: prevLive ? prevLive.desc : (saved.desc !== undefined ? saved.desc : buildInitialDescription(row)),
+        revisado: prevLive ? prevLive.revisado : !!saved.revisado,
+        aiCategory: prevLive ? prevLive.aiCategory : (saved.aiCategory || null),
+        improving: false
+      };
+    });
+    const conFotoCount = items.filter(i=>i.image).length;
+    const sinFotoCount = items.length - conFotoCount;
+
+    $("#navCountCatalogo").textContent = items.length;
+    $("#navCountResumen").textContent = items.length ? `${conFotoCount}/${items.length}` : "â€“";
+    
+    // Contadores en chips de CatÃ¡logo
+    const chipTodos = $("#chipCountTodos"); if (chipTodos) chipTodos.textContent = items.length;
+    const chipCon = $("#chipCountCon"); if (chipCon) chipCon.textContent = conFotoCount;
+    const chipSin = $("#chipCountSin"); if (chipSin) chipSin.textContent = sinFotoCount;
+
+    // Contadores y botones de faltantes
+    const sideMissing = $("#sideMissingCount"); if (sideMissing) sideMissing.textContent = sinFotoCount;
+    const boxMissing = $("#boxMissingCount"); if (boxMissing) boxMissing.textContent = sinFotoCount;
+    const btnSideMissing = $("#btnExportMissingSide"); if (btnSideMissing) btnSideMissing.disabled = (sinFotoCount === 0);
+    const btnBoxMissing = $("#btnExportMissingBox"); if (btnBoxMissing) btnBoxMissing.disabled = (sinFotoCount === 0);
+
+    $("#btnExportCsv").disabled = items.length === 0;
+    $("#btnExportXlsx").disabled = items.length === 0;
+    $("#btnExportZip").disabled = conFotoCount === 0;
+    refreshIaButtons();
+    populateCategoriaSelect();
+    renderResumen();
+    renderCatalog();
+    runCompare();
+  }
+
+  // ---------- RESUMEN ----------
+  function renderResumen(){
+    const conFoto = items.filter(i=>i.image).length;
+    const total = items.length;
+    const sinFoto = total - conFoto;
+    const revisados = items.filter(i=>i.revisado).length;
+    const usedBases = new Set(items.filter(i=>i.image).map(i=>i.image.base));
+    const orphans = images.filter(im => !usedBases.has(im.base));
+
+    $("#statTotal").textContent = total;
+    $("#statConFoto").textContent = conFoto;
+    $("#statSinFoto").textContent = sinFoto;
+    $("#statOrfanas").textContent = orphans.length;
+    $("#statRevisados").textContent = revisados;
+
+    const elStatSin = $("#statSinFoto");
+    if (elStatSin && elStatSin.parentElement) elStatSin.parentElement.classList.toggle("warn", sinFoto > 0);
+
+    const boxOrphan = $("#boxOrphanCount"); if (boxOrphan) boxOrphan.textContent = orphans.length;
+    const boxMissing = $("#boxMissingCount"); if (boxMissing) boxMissing.textContent = sinFoto;
+    const sideMissing = $("#sideMissingCount"); if (sideMissing) sideMissing.textContent = sinFoto;
+    const btnSideMissing = $("#btnExportMissingSide"); if (btnSideMissing) btnSideMissing.disabled = (sinFoto === 0);
+    const btnBoxMissing = $("#btnExportMissingBox"); if (btnBoxMissing) btnBoxMissing.disabled = (sinFoto === 0);
+
+    const pct = total ? Math.round((conFoto/total)*100) : 0;
+    $("#progressLabel").textContent = `${conFoto} / ${total} (${pct}%)`;
+    $("#progressBar").style.width = pct + "%";
+
+    // pendientes de foto -> permitir asignar desde fotos huÃ©rfanas
+    const pendWrap = $("#pendingList");
+    const pendientes = items.filter(i => !i.image);
+    if (!total){ pendWrap.innerHTML = `<p class="empty-mini">Sube un Excel para ver esta lista.</p>`; }
+    else if (!pendientes.length){ pendWrap.innerHTML = `<p class="empty-mini">Todos los productos tienen foto ðŸŽ‰</p>`; }
+    else {
+      pendWrap.innerHTML = pendientes.map(it => {
+        const opts = orphans.map(o => `<option value="${o.base}">${o.name}</option>`).join("");
+        return `<div class="assign-row">
+          <span class="sku-tag">${it.sku}</span>
+          <select data-sku="${it.skuNorm}" class="assignSel">
+            <option value="">â€” asignar foto â€”</option>${opts}
+          </select>
+          <button class="assignBtn" data-sku="${it.skuNorm}">Asignar</button>
+        </div>`;
+      }).join("");
+      pendWrap.querySelectorAll(".assignBtn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const skuNorm = btn.dataset.sku;
+          const sel = pendWrap.querySelector(`.assignSel[data-sku="${skuNorm}"]`);
+          if (sel.value){ manualAssign.set(skuNorm, sel.value); rebuildItems(); toast("Foto asignada"); }
+        });
+      });
+    }
+
+    // fotos huÃ©rfanas -> asignar a un SKU pendiente
+    const orphWrap = $("#orphanList");
+    if (!images.length){ orphWrap.innerHTML = `<p class="empty-mini">Sube fotos para ver esta lista.</p>`; }
+    else if (!orphans.length){ orphWrap.innerHTML = `<p class="empty-mini">Todas tus fotos estÃ¡n en uso.</p>`; }
+    else {
+      const pendOpts = pendientes.map(it => `<option value="${it.skuNorm}">${it.sku}</option>`).join("");
+      orphWrap.innerHTML = orphans.map(o => `
+        <div class="assign-row">
+          <img class="thumb" src="${o.url}" alt="">
+          <span class="sku-tag" style="min-width:auto; max-width:90px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${o.name}</span>
+          <select data-base="${o.base}" class="orphanSel">
+            <option value="">â€” asignar a SKU â€”</option>${pendOpts}
+          </select>
+          <button class="orphanBtn" data-base="${o.base}">Asignar</button>
+        </div>`).join("");
+      orphWrap.querySelectorAll(".orphanBtn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const base = btn.dataset.base;
+          const sel = orphWrap.querySelector(`.orphanSel[data-base="${base}"]`);
+          if (sel.value){ manualAssign.set(sel.value, base); rebuildItems(); toast("Foto asignada"); }
+        });
+      });
+    }
+  }
+
+  // ---------- filtros / orden ----------
+  $("#search").addEventListener("input", e => { searchTerm = e.target.value.trim().toLowerCase(); renderCatalog(); });
+  $("#filterChips").addEventListener("click", e => {
+    const chip = e.target.closest(".chip"); if (!chip) return;
+    document.querySelectorAll("#filterChips .chip").forEach(c=>c.classList.remove("active"));
+    chip.classList.add("active"); currentFilter = chip.dataset.filter; renderCatalog();
+  });
+  $("#estadoSelect").addEventListener("change", e => { estadoFilter = e.target.value; renderCatalog(); });
+  $("#categoriaSelect").addEventListener("change", e => { categoriaFiltro = e.target.value; renderCatalog(); });
+  $("#sortSelect").addEventListener("change", e => { sortBy = e.target.value; renderCatalog(); });
+
+  function matchesFilter(item){
+    if (currentFilter === "con" && !item.image) return false;
+    if (currentFilter === "sin" && item.image) return false;
+    if (estadoFilter === "revisado" && !item.revisado) return false;
+    if (estadoFilter === "pendiente" && item.revisado) return false;
+    if (categoriaFiltro !== "todas" && getCategoryOf(item) !== categoriaFiltro) return false;
+    if (!searchTerm) return true;
+    const hay = [item.sku, item.row.__skuOriginal, item.desc, ...Object.values(item.row)].join(" ").toLowerCase();
+    return hay.includes(searchTerm);
+  }
+  function sortItems(list){
+    const nameCol = guessCol(/nombre|producto|tÃ­tulo|titulo|^name$/i);
+    const priceCol = guessCol(/precio|price|valor/i);
+    const arr = list.slice();
+    if (sortBy === "nombre" && nameCol) arr.sort((a,b)=> (a.row[nameCol]||"").localeCompare(b.row[nameCol]||""));
+    else if (sortBy === "precio" && priceCol) arr.sort((a,b)=> (parseFloat((b.row[priceCol]||"0").replace(/[^0-9.\-]/g,""))||0) - (parseFloat((a.row[priceCol]||"0").replace(/[^0-9.\-]/g,""))||0)*0 + ((parseFloat((a.row[priceCol]||"0").replace(/[^0-9.\-]/g,""))||0) - (parseFloat((b.row[priceCol]||"0").replace(/[^0-9.\-]/g,""))||0)));
+    else if (sortBy === "sinfoto") arr.sort((a,b)=> (a.image?1:0) - (b.image?1:0));
+    else arr.sort((a,b)=> a.sku.localeCompare(b.sku, undefined, {numeric: true}));
+    return arr;
+  }
+
+  // ---------- render catÃ¡logo ----------
+  function fieldsForCard(row){
+    return Object.keys(row).filter(k => !k.startsWith("__")).map(k => `${k}: ${row[k]}`).filter(t => !/:\s*$/.test(t));
+  }
+
+  function renderCatalog(){
+    if (!items.length){ gridWrap.innerHTML = `<div class="empty">Sube tu Excel para empezar a armar las fichas de producto.</div>`; updateBulkBar(); return; }
+    const visible = sortItems(items.filter(matchesFilter));
+    if (!visible.length){ gridWrap.innerHTML = `<div class="empty">Nada coincide con ese filtro.</div>`; updateBulkBar(); return; }
+    const grid = document.createElement("div"); grid.className = "grid";
+    visible.forEach(item => grid.appendChild(renderCard(item)));
+    gridWrap.innerHTML = ""; gridWrap.appendChild(grid);
+    updateBulkBar();
+  }
+
+  function updateBulkBar(){
+    const bar = $("#bulkBar");
+    if (selected.size > 0){ bar.classList.add("show"); $("#bulkCount").textContent = selected.size; }
+    else bar.classList.remove("show");
+  }
+
+  async function getDownloadBlob(item){
+    if (!item.image) return null;
+    if ($("#optimizeToggle").checked){
+      try{ return await optimizeToSquareBlob(item.image.file); }catch(e){ return item.image.file; }
+    }
+    return item.image.file;
+  }
+
+  function renderCard(item){
+    const card = document.createElement("div");
+    card.className = "card" + (item.revisado ? " reviewed" : "");
+
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox"; checkbox.className = "select-box";
+    checkbox.checked = selected.has(item.sku);
+    checkbox.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      if (checkbox.checked) selected.add(item.sku); else selected.delete(item.sku);
+      updateBulkBar();
+    });
+    card.appendChild(checkbox);
+
+    const photo = document.createElement("div"); photo.className = "photo";
+    photo.style.cursor = "pointer";
+    photo.title = "Haz clic para abrir la ficha de Didi Food";
+    photo.addEventListener("click", (e) => {
+      if (e.target.tagName !== "BUTTON") openDidiModal(item);
+    });
+
+    if (item.image){
+      photo.innerHTML = `<img src="${item.image.url}" alt="${item.sku}">`;
+      const editBtn = document.createElement("button");
+      editBtn.textContent = "âœï¸ Editar";
+      editBtn.style.cssText = "position:absolute; bottom:6px; right:6px; font-size:0.66rem; padding:4px 8px; z-index:2;";
+      editBtn.addEventListener("click", (ev) => { ev.stopPropagation(); openEditor(item); });
+      photo.appendChild(editBtn);
+    }
+    else { photo.style.cursor="pointer"; photo.title="Haz clic para asignar una foto"; photo.addEventListener("click",(ev)=>{if(ev.target.tagName!=="BUTTON")openPhotoPicker(item);}); photo.innerHTML=`<span class="badge-nofoto">Sin foto</span><div style="font-size:0.68rem;color:var(--muted);margin-top:4px;">📷 Clic para asignar</div><span>ðŸ“¦</span><span>Sin coincidencia</span>`; }
+    card.appendChild(photo);
+
+    const body = document.createElement("div"); body.className = "card-body";
+
+    const skuLine = document.createElement("div"); skuLine.className = "sku-line";
+    const skuGroup = document.createElement("div");
+    skuGroup.style.cssText = "display:flex; flex-direction:column; gap:2px; min-width:0; overflow:hidden; cursor:pointer;";
+    skuGroup.title = "Haz clic para abrir la ficha de Didi Food";
+    skuGroup.addEventListener("click", () => openDidiModal(item));
+    
+    const skuHeadRow = document.createElement("div");
+    skuHeadRow.style.cssText = "display:flex; align-items:center; gap:6px;";
+    skuHeadRow.innerHTML = `<span class="sku">${item.sku}</span>`;
+    
+    const catSpan = document.createElement("span");
+    catSpan.style.cssText = "font-size:0.64rem; color:var(--muted); background:var(--panel-2); border:1px solid var(--border); border-radius:6px; padding:2px 6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;";
+    catSpan.textContent = getCategoryOf(item);
+    skuHeadRow.appendChild(catSpan);
+    skuGroup.appendChild(skuHeadRow);
+
+    const titleSpan = document.createElement("span");
+    titleSpan.style.cssText = "font-size:0.75rem; font-weight:600; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;";
+    titleSpan.textContent = item.title || item.sku;
+    skuGroup.appendChild(titleSpan);
+
+    if (item.row.__skuOriginal && item.row.__skuOriginal !== item.sku){
+      const origSpan = document.createElement("span");
+      origSpan.className = "sku-orig";
+      origSpan.title = item.row.__skuOriginal;
+      origSpan.textContent = item.row.__skuOriginal;
+      skuGroup.appendChild(origSpan);
+    }
+
+    skuLine.appendChild(skuGroup);
+    const revLabel = document.createElement("label"); revLabel.className = "reviewed-toggle";
+    const revCheck = document.createElement("input"); revCheck.type = "checkbox"; revCheck.checked = item.revisado;
+    revCheck.addEventListener("change", () => {
+      item.revisado = revCheck.checked;
+      setNote(item.skuNorm, {revisado: item.revisado});
+      card.classList.toggle("reviewed", item.revisado);
+      renderResumen();
+      dbSaveAll();
+    });
+    revLabel.appendChild(revCheck); revLabel.appendChild(document.createTextNode(" Revisado"));
+    skuLine.appendChild(revLabel);
+    body.appendChild(skuLine);
+
+    const fields = document.createElement("div"); fields.className = "fields";
+    fieldsForCard(item.row).slice(0,5).forEach(t => { const s=document.createElement("span"); s.textContent=t; fields.appendChild(s); });
+    body.appendChild(fields);
+
+    const textarea = document.createElement("textarea"); textarea.className = "desc"; textarea.value = item.desc;
+    textarea.addEventListener("input", () => {
+      item.desc = textarea.value;
+      setNote(item.skuNorm, {desc: item.desc});
+      dbSaveAll();
+    });
+    body.appendChild(textarea);
+
+    const actions = document.createElement("div"); actions.className = "card-actions";
+
+    const btnOpenDidi = document.createElement("button");
+    btnOpenDidi.textContent = "ðŸ‘ï¸ Ficha Didi";
+    btnOpenDidi.style.fontWeight = "600";
+    btnOpenDidi.addEventListener("click", () => openDidiModal(item));
+    actions.appendChild(btnOpenDidi);
+
+    const btnCopy = document.createElement("button"); btnCopy.textContent = "Copiar";
+    btnCopy.addEventListener("click", async () => {
+      try{ await navigator.clipboard.writeText(`${item.title}\n${item.desc}`); toast("TÃ­tulo y descripciÃ³n copiados"); }
+      catch(e){ textarea.select(); toast("Selecciona y copia con Ctrl+C"); }
+    });
+    actions.appendChild(btnCopy);
+
+    const btnDownload = document.createElement("button"); btnDownload.textContent = "Foto";
+    if (!item.image) btnDownload.disabled = true;
+    btnDownload.addEventListener("click", async () => {
+      if (!item.image) return;
+      btnDownload.disabled = true; btnDownload.textContent = "â€¦";
+      try{
+        const blob = await getDownloadBlob(item);
+        const ext = $("#optimizeToggle").checked ? ".jpg" : (item.image.name.match(/\.[^.]+$/) || [".jpg"])[0];
+        const result = await saveFile(`${item.sku}${ext}`, blob);
+        if (result === "error") toast("No se pudo descargar la foto");
+      }catch(e){ toast("No se pudo descargar la foto"); }
+      finally{ btnDownload.disabled = !item.image; btnDownload.textContent = "Foto"; }
+    });
+    actions.appendChild(btnDownload);
+
+    const btnImprove = document.createElement("button");
+    btnImprove.textContent = "âœ¨ Mejorar";
+    btnImprove.className = "primary";
+    btnImprove.addEventListener("click", async () => {
+      btnImprove.disabled = true; btnImprove.textContent = "â€¦";
+      await improveProduct(item, true, true);
+      titleSpan.textContent = item.title;
+      textarea.value = item.desc;
+      btnImprove.disabled = false; btnImprove.textContent = "âœ¨ Mejorar";
+      toast("TÃ­tulo y descripciÃ³n mejorados");
+    });
+    actions.appendChild(btnImprove);
+
+    body.appendChild(actions);
+    card.appendChild(body);
+    return card;
+  }
+
+  // ---------- MOTOR DE IA INTELIGENTE (LOCAL & EXTERNO) ----------
+  async function callExternalAi(prompt, maxTokens = 120){
+    if (aiConfig.provider === "gemini" && aiConfig.apiKey){
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${aiConfig.apiKey}`;
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+          contents: [{parts: [{text: prompt}]}],
+          generationConfig: {maxOutputTokens: maxTokens, temperature: 0.3}
+        })
+      });
+      if (!res.ok) throw new Error("Gemini HTTP " + res.status);
+      const data = await res.json();
+      return data.candidates[0].content.parts[0].text.trim();
+    } else if (aiConfig.provider === "openai" && aiConfig.apiKey){
+      const url = "https://api.openai.com/v1/chat/completions";
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${aiConfig.apiKey}`
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          messages: [{role: "user", content: prompt}],
+          max_tokens: maxTokens,
+          temperature: 0.3
+        })
+      });
+      if (!res.ok) throw new Error("OpenAI HTTP " + res.status);
+      const data = await res.json();
+      return data.choices[0].message.content.trim();
+    }
+    return null;
+  }
+
+  async function improveProduct(item, doTitle = true, doDesc = true){
+    if (!item) return;
+    if (doTitle){
+      if (aiConfig.provider !== "local" && aiConfig.apiKey){
+        try{
+          const prompt = `Limpia y profesionaliza este tÃ­tulo de producto para Didi Food / domicilios en Colombia. Debe ser corto, limpio, en Title Case, sin mayÃºsculas agresivas y sin cÃ³digos de inventario. Responde solo con el tÃ­tulo:\n\nProducto: ${JSON.stringify(item.row)}`;
+          const res = await callExternalAi(prompt, 30);
+          if (res) item.title = res.replace(/["\n\r]/g, "").trim();
+          else item.title = smartCleanTitle("", item.row);
+        }catch(e){
+          item.title = smartCleanTitle("", item.row);
+        }
+      } else {
+        item.title = smartCleanTitle("", item.row);
+      }
+    }
+
+    if (doDesc){
+      if (aiConfig.provider !== "local" && aiConfig.apiKey){
+        try{
+          const prompt = `Escribe una descripciÃ³n comercial atractiva y corta (1 o 2 frases) para este producto en Didi Food en espaÃ±ol de Colombia. Resalta sabor, calidad o practicidad segÃºn el producto, sin inventar ingredientes raros. Responde solo con la descripciÃ³n:\n\nTÃ­tulo: ${item.title}\nDatos: ${JSON.stringify(item.row)}`;
+          const res = await callExternalAi(prompt, 90);
+          if (res) item.desc = res.replace(/["\n\r]/g, " ").trim();
+          else item.desc = smartGenerateDesc(item);
+        }catch(e){
+          item.desc = smartGenerateDesc(item);
+        }
+      } else {
+        item.desc = smartGenerateDesc(item);
+      }
+    }
+
+    setNote(item.skuNorm, {title: item.title, desc: item.desc});
+    dbSaveAll();
+  }
+
+  // ---------- Clasificar categorÃ­as ----------
+  function classifyCategorySmart(item){
+    const text = [item.title, item.sku, item.desc, ...Object.values(item.row)].join(" ").toLowerCase();
+    if (/cerveza|poker|aguila|club colombia|corona|heineken|smirnoff|budweiser/i.test(text)) return "Cervezas";
+    if (/aguardiente|ron|whisky|vino|tequila|vodka|ginebra|licor/i.test(text)) return "Licores y Vinos";
+    if (/coca cola|pepsi|postobon|gaseosa|refresco|quatro|sprite|fanta|ginger/i.test(text)) return "Gaseosas";
+    if (/agua|jugo|hit|tampico|pulpa|nÃ©ctar|nectar|te hatsu|hatsu|gatorade/i.test(text)) return "Aguas y Bebidas";
+    if (/papas|doritos|lays|margarita|de todito|choclitos|pasabocas|mani|snack/i.test(text)) return "Snacks y Pasabocas";
+    if (/galletas|chocolate|dulces|chocolatina|bon bon bum|caramelo|confite/i.test(text)) return "Dulces y Chocolates";
+    if (/leche|queso|yogurt|mantequilla|alpina|colanta/i.test(text)) return "LÃ¡cteos";
+    if (/arroz|aceite|granos|frijol|lenteja|pasta|sal|azucar|harina/i.test(text)) return "Despensa y Abarrotes";
+    if (/jabon|papel|detergente|cloro|aseo|limpieza|crema dental/i.test(text)) return "Cuidado y Limpieza";
+    if (/helado|paleta|crem helado/i.test(text)) return "Helados";
+    const catCol = guessCol(/categor/i);
+    if (catCol && item.row[catCol]) return item.row[catCol];
+    return "Otros";
+  }
+
+  $("#btnClassify").addEventListener("click", async () => {
+    if (!items.length) return;
+    const btn = $("#btnClassify"); btn.disabled = true; btn.textContent = "Clasificandoâ€¦";
+    items.forEach(it => {
+      it.aiCategory = classifyCategorySmart(it);
+      setNote(it.skuNorm, {aiCategory: it.aiCategory});
+    });
+    populateCategoriaSelect();
+    renderCatalog();
+    dbSaveAll();
+    btn.disabled = false; btn.textContent = "ðŸ·ï¸ Clasificar categorÃ­as";
+    toast(`CategorÃ­as asignadas a ${items.length} productos`);
+  });
+
+  // ---------- Mejorar catÃ¡logo completo ----------
+  $("#btnImproveAll").addEventListener("click", async () => {
+    if (!items.length) return;
+    const btn = $("#btnImproveAll"); btn.disabled = true;
+    let done = 0;
+    for (const item of items){
+      await improveProduct(item, true, true);
+      done++;
+      if (done % 50 === 0 || done === items.length){
+        btn.textContent = `Mejorandoâ€¦ (${done}/${items.length})`;
+      }
+    }
+    renderCatalog();
+    dbSaveAll();
+    btn.disabled = false; btn.textContent = "âœ¨ Mejorar tÃ­tulos y descripciones";
+    toast(`${done} tÃ­tulos y descripciones mejorados con Ã©xito`);
+  });
+
+  // ---------- Acciones en lote ----------
+  $("#bulkImprove").addEventListener("click", async () => {
+    const chosen = items.filter(i => selected.has(i.sku));
+    if (!chosen.length) return;
+    const btn = $("#bulkImprove"); btn.disabled = true; btn.textContent = "Mejorandoâ€¦";
+    for (const item of chosen){
+      await improveProduct(item, true, true);
+    }
+    btn.disabled = false; btn.textContent = "Mejorar texto (lote)";
+    renderCatalog();
+    dbSaveAll();
+    toast(`${chosen.length} productos mejorados`);
+  });
+
+  // ---------- exportar CSV / Excel ----------
+  function exportRowsFor(list){
+    const cols = excelHeaders.filter(Boolean);
+    const header = ["sku", "sku_original", ...cols, "categoria", "descripcion_final", "tiene_foto", "revisado"];
+    const rows = list.map(item => [item.sku, item.row.__skuOriginal || "", ...cols.map(c => item.row[c] || ""), getCategoryOf(item), item.desc, item.image?"si":"no", item.revisado?"si":"no"]);
+    return {header, rows};
+  }
+  async function exportCsv(list){
+    const {header, rows} = exportRowsFor(list);
+    const csvEscape = (v) => `"${String(v===undefined?"":v).replace(/"/g,'""')}"`;
+    const lines = [header.map(csvEscape).join(","), ...rows.map(r => r.map(csvEscape).join(","))];
+    const csv = "\uFEFF" + lines.join("\r\n");
+    const result = await saveFile("catalogo_didi_food.csv", csv);
+    if (result === "error") toast("No se pudo descargar el CSV");
+  }
+  async function exportXlsx(list){
+    const {header, rows} = exportRowsFor(list);
+    const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, "CatÃ¡logo");
+    const wbout = XLSX.write(wb, {bookType:"xlsx", type:"array"});
+    const blob = new Blob([wbout], {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+    const result = await saveFile("catalogo_didi_food.xlsx", blob);
+    if (result === "error") toast("No se pudo descargar el Excel");
+  }
+  async function exportMissingXlsx(){
+    const missing = items.filter(i => !i.image);
+    if (!missing.length){
+      toast("Â¡Todos los productos tienen foto! No hay faltantes ðŸŽ‰");
+      return;
+    }
+    const cols = excelHeaders.filter(Boolean);
+    const header = ["sku", "sku_original", ...cols, "categoria", "estado_foto"];
+    const rows = missing.map(item => [
+      item.sku,
+      item.row.__skuOriginal || item.sku,
+      ...cols.map(c => item.row[c] || ""),
+      getCategoryOf(item),
+      "FALTA FOTO"
+    ]);
+    const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Faltantes de Foto");
+    const wbout = XLSX.write(wb, {bookType:"xlsx", type:"array"});
+    const blob = new Blob([wbout], {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+    const result = await saveFile("productos_sin_foto.xlsx", blob);
+    if (result !== "error") toast(`Descargados ${missing.length} productos sin foto`);
+    else toast("No se pudo descargar el Excel");
+  }
+
+  $("#btnExportCsv").addEventListener("click", () => exportCsv(items));
+  $("#btnExportXlsx").addEventListener("click", () => exportXlsx(items));
+  const sideBtn = $("#btnExportMissingSide"); if (sideBtn) sideBtn.addEventListener("click", exportMissingXlsx);
+  const boxBtn = $("#btnExportMissingBox"); if (boxBtn) boxBtn.addEventListener("click", exportMissingXlsx);
+
+  // ---------- optimizar y exportar fotos en zip ----------
+  function loadImageEl(file){
+    return new Promise((res, rej) => { const img = new Image(); img.onload = () => res(img); img.onerror = rej; img.src = URL.createObjectURL(file); });
+  }
+  async function optimizeToSquareBlob(file, target){
+    target = target || 1080;
+    const img = await loadImageEl(file);
+    const side = Math.min(img.naturalWidth, img.naturalHeight);
+    const sx = (img.naturalWidth - side) / 2, sy = (img.naturalHeight - side) / 2;
+    const outSide = Math.min(side, target);
+    const canvas = document.createElement("canvas");
+    canvas.width = outSide; canvas.height = outSide;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(img, sx, sy, side, side, 0, 0, outSide, outSide);
+    return new Promise(resolve => canvas.toBlob(resolve, "image/jpeg", 0.88));
+  }
+
+  $("#btnExportZip").addEventListener("click", async () => {
+    const withPhoto = items.filter(i => i.image);
+    if (!withPhoto.length) return;
+    const btn = $("#btnExportZip"); btn.disabled = true; btn.textContent = "Preparandoâ€¦";
+    try{
+      const zip = new JSZip();
+      const optimize = $("#optimizeToggle").checked;
+      for (let i=0; i<withPhoto.length; i++){
+        const item = withPhoto[i];
+        btn.textContent = `Preparandoâ€¦ (${i+1}/${withPhoto.length})`;
+        const blob = optimize ? await optimizeToSquareBlob(item.image.file) : item.image.file;
+        const ext = optimize ? "jpg" : (item.image.name.split(".").pop() || "jpg");
+        zip.file(`${item.sku}.${ext}`, blob);
+      }
+      const content = await zip.generateAsync({type:"blob"});
+      const result = await saveFile("fotos_didi_food.zip", content);
+      if (result === "error") toast("No se pudo generar el .zip");
+    }catch(e){
+      toast("No se pudo generar el .zip");
+    } finally {
+      btn.disabled = false; btn.textContent = "Fotos en .zip";
+    }
+  });
+
+  // ---------- comparar con Rappi ----------
+  let rappiHeaders = [], rappiAOA = [], rappiSkuIdx = -1;
+  $("#rappiInput").addEventListener("change", function(e){
+    const file = e.target.files[0]; if (!file) return;
+    $("#rappiName").textContent = file.name;
+    parseWorkbook(file, function(err, res){
+      if (err){ toast("No pude leer ese Excel de Rappi."); return; }
+      rappiHeaders = res.headers; rappiAOA = res.rows;
+      rappiSkuIdx = guessSkuColumn(rappiHeaders);
+      const sel = $("#rappiCol"); sel.innerHTML = "";
+      rappiHeaders.forEach((h,i) => {
+        const opt = document.createElement("option"); opt.value = i; opt.textContent = h || `Columna ${i+1}`;
+        if (i === rappiSkuIdx) opt.selected = true; sel.appendChild(opt);
+      });
+      $("#rappiColWrap").style.display = "block";
+      runCompare();
+    });
+  });
+  $("#rappiCol").addEventListener("change", function(e){ rappiSkuIdx = parseInt(e.target.value, 10); runCompare(); });
+
+  let lastCompare = {enRappi:[], enCatalogo:[]};
+  function runCompare(){
+    $("#navCountComparar").textContent = rappiAOA.length ? "â€¢" : "â€“";
+    if (!rappiAOA.length || !items.length){
+      $("#compareResult").innerHTML = items.length ? "" : `<p class="hint" style="color:var(--muted); font-size:0.8rem;">Sube primero tu Excel principal (en el menÃº Resumen) para poder comparar.</p>`;
+      return;
+    }
+    const rappiSkus = new Map();
+    rappiAOA.forEach(r => {
+      const raw = r[rappiSkuIdx] !== undefined ? String(r[rappiSkuIdx]).trim() : "";
+      if (raw){
+        const clean = extractSkuNumber(raw);
+        rappiSkus.set(normKey(clean), clean || raw);
+      }
+    });
+    const catalogSkus = new Map();
+    items.forEach(it => catalogSkus.set(normKey(it.sku), it.sku));
+    const enRappiNoCatalogo = [...rappiSkus.entries()].filter(([k]) => !catalogSkus.has(k)).map(([,v]) => v);
+    const enCatalogoNoRappi = [...catalogSkus.entries()].filter(([k]) => !rappiSkus.has(k)).map(([,v]) => v);
+    lastCompare = {enRappi:enRappiNoCatalogo, enCatalogo:enCatalogoNoRappi};
+    $("#compareResult").innerHTML = `
+      <div class="compare-result">
+        <div class="compare-col">
+          <h3>En Rappi, no en tu catÃ¡logo (${enRappiNoCatalogo.length}) <button id="copyRappiList">Copiar</button></h3>
+          <ul>${enRappiNoCatalogo.slice(0,300).map(s=>`<li>${s}</li>`).join("") || "<li>â€” ninguno â€”</li>"}</ul>
+        </div>
+        <div class="compare-col">
+          <h3>En tu catÃ¡logo, no en Rappi (${enCatalogoNoRappi.length}) <button id="copyCatalogoList">Copiar</button></h3>
+          <ul>${enCatalogoNoRappi.slice(0,300).map(s=>`<li>${s}</li>`).join("") || "<li>â€” ninguno â€”</li>"}</ul>
+        </div>
+      </div>`;
+    const cr = $("#copyRappiList"); if (cr) cr.addEventListener("click", async ()=>{ try{ await navigator.clipboard.writeText(lastCompare.enRappi.join("\n")); toast("Lista copiada"); }catch(e){} });
+    const cc = $("#copyCatalogoList"); if (cc) cc.addEventListener("click", async ()=>{ try{ await navigator.clipboard.writeText(lastCompare.enCatalogo.join("\n")); toast("Lista copiada"); }catch(e){} });
+  }
+
+  // ---------- editor de foto (recorte + fondo blanco) ----------
+  let editorItem = null, editorImgEl = null;
+  let editorState = {zoom:1, offX:0, offY:0, brightness:100, contrast:100, whiteBg:false};
+  const editorCanvas = $("#editorCanvas");
+  const editorCtx = editorCanvas.getContext("2d");
+
+  function loadImageElP(file){
+    return new Promise((res, rej) => { const img = new Image(); img.onload = () => res(img); img.onerror = rej; img.src = URL.createObjectURL(file); });
+  }
+
+  async function openEditor(item){
+    if (!item.image) return;
+    editorItem = item;
+    editorImgEl = await loadImageElP(item.image.file);
+    editorState = {zoom:1, offX:0, offY:0, brightness:100, contrast:100, whiteBg:(item.image.file.type === "image/png")};
+    $("#editorZoom").value = 1; $("#editorBrightness").value = 100; $("#editorContrast").value = 100;
+    $("#editorWhiteBg").checked = editorState.whiteBg;
+    $("#editorTitle").textContent = "Editar foto â€” " + item.sku;
+    $("#editorOverlay").classList.add("show");
+    drawEditor();
+  }
+  function closeEditor(){ $("#editorOverlay").classList.remove("show"); editorItem = null; editorImgEl = null; }
+  $("#editorCancel").addEventListener("click", closeEditor);
+
+  function drawEditorOn(ctx, size){
+    const img = editorImgEl;
+    const minDim = Math.min(img.naturalWidth, img.naturalHeight);
+    // escala base: la imagen cubre el cuadro (cover) y luego se multiplica por el zoom
+    const baseScale = size / minDim;
+    const scale = baseScale * editorState.zoom;
+    const w = img.naturalWidth * scale, h = img.naturalHeight * scale;
+    // lÃ­mites de paneo para que la imagen siempre cubra el cuadro
+    const maxOffX = Math.max(0, (w - size) / 2);
+    const maxOffY = Math.max(0, (h - size) / 2);
+    const offX = Math.max(-maxOffX, Math.min(maxOffX, editorState.offX));
+    const offY = Math.max(-maxOffY, Math.min(maxOffY, editorState.offY));
+    editorState.offX = offX; editorState.offY = offY;
+
+    ctx.clearRect(0,0,size,size);
+    if (editorState.whiteBg){ ctx.fillStyle = "#ffffff"; ctx.fillRect(0,0,size,size); }
+    ctx.filter = `brightness(${editorState.brightness}%) contrast(${editorState.contrast}%)`;
+    ctx.drawImage(img, size/2 - w/2 + offX, size/2 - h/2 + offY, w, h);
+    ctx.filter = "none";
+  }
+  function drawEditor(){ drawEditorOn(editorCtx, editorCanvas.width); }
+
+  $("#editorZoom").addEventListener("input", e => { editorState.zoom = parseFloat(e.target.value); drawEditor(); });
+  $("#editorBrightness").addEventListener("input", e => { editorState.brightness = parseFloat(e.target.value); drawEditor(); });
+  $("#editorContrast").addEventListener("input", e => { editorState.contrast = parseFloat(e.target.value); drawEditor(); });
+  $("#editorWhiteBg").addEventListener("change", e => { editorState.whiteBg = e.target.checked; drawEditor(); });
+
+  (function setupDrag(){
+    const wrap = $("#editorCanvasWrap");
+    let dragging = false, startX=0, startY=0, startOffX=0, startOffY=0;
+    wrap.addEventListener("pointerdown", e => {
+      if (!editorItem) return;
+      dragging = true; wrap.style.cursor = "grabbing";
+      startX = e.clientX; startY = e.clientY; startOffX = editorState.offX; startOffY = editorState.offY;
+      wrap.setPointerCapture(e.pointerId);
+    });
+    wrap.addEventListener("pointermove", e => {
+      if (!dragging) return;
+      const rect = wrap.getBoundingClientRect();
+      const scaleRatio = editorCanvas.width / rect.width;
+      editorState.offX = startOffX + (e.clientX - startX) * scaleRatio;
+      editorState.offY = startOffY + (e.clientY - startY) * scaleRatio;
+      drawEditor();
+    });
+    ["pointerup","pointercancel","pointerleave"].forEach(evt => wrap.addEventListener(evt, () => { dragging = false; wrap.style.cursor = "grab"; }));
+  })();
+
+  $("#editorSave").addEventListener("click", () => {
+    if (!editorItem) return;
+    const size = 1080;
+    const outCanvas = document.createElement("canvas");
+    outCanvas.width = size; outCanvas.height = size;
+    const outCtx = outCanvas.getContext("2d");
+    drawEditorOn(outCtx, size);
+    const format = editorState.whiteBg ? "image/jpeg" : "image/png";
+    const ext = editorState.whiteBg ? "jpg" : "png";
+    outCanvas.toBlob(blob => {
+      const item = editorItem;
+      manualImages.set(item.skuNorm, {file:blob, name:`${item.sku}_editada.${ext}`, base:"__manual__"+item.skuNorm, url:URL.createObjectURL(blob)});
+      closeEditor();
+      rebuildItems();
+      dbSaveImages([manualImages.get(item.skuNorm)]);
+      toast("Foto editada guardada");
+    }, format, 0.92);
+  });
+
+  // ---------- VENTANA DE ARTÃCULO ESTILO DIDI FOOD ----------
+  let currentDidiIndex = 0;
+  const didiModal = $("#didiModal");
+
+  function openDidiModal(item){
+    if (!item || !items.length) return;
+    const idx = items.findIndex(x => x.sku === item.sku);
+    currentDidiIndex = idx !== -1 ? idx : 0;
+    renderDidiModalData(items[currentDidiIndex]);
+    didiModal.classList.add("show");
+  }
+
+  function closeDidiModal(){
+    didiModal.classList.remove("show");
+  }
+
+  function renderDidiModalData(item){
+    if (!item) return;
+    const nameCol = guessCol(/nombre|producto|tÃ­tulo|titulo|^name$/i);
+    const priceCol = guessCol(/precio|price|valor/i);
+    const stockCol = guessCol(/stock|cantidad|inventario|qty/i);
+    const pesoCol = guessCol(/peso|gramos|gramaje|weight/i);
+    const volCol = guessCol(/volumen|litros|ml/i);
+
+    $("#didiSku").value = item.sku;
+    $("#didiNombre").value = item.title || smartCleanTitle("", item.row);
+    $("#didiDesc").value = item.desc || smartGenerateDesc(item);
+    $("#didiSkuOrig").value = (item.row && item.row.__skuOriginal) ? item.row.__skuOriginal : item.sku;
+    
+    // Precio
+    let priceVal = priceCol && item.row[priceCol] ? item.row[priceCol] : "";
+    priceVal = priceVal.replace(/[^0-9.]/g, "");
+    $("#didiPrecio").value = priceVal;
+
+    // Stock
+    let stockVal = stockCol && item.row[stockCol] ? item.row[stockCol] : "100";
+    $("#didiStock").value = stockVal;
+
+    // CategorÃ­a
+    $("#didiCategoria").value = getCategoryOf(item);
+
+    // Peso / Volumen
+    let peso = pesoCol && item.row[pesoCol] ? item.row[pesoCol] : "";
+    let vol = volCol && item.row[volCol] ? item.row[volCol] : "";
+    if (!peso){
+      const m = $("#didiNombre").value.match(/(\d+(?:[.,]\d+)?)\s*(?:g|gr|grs|kg)/i);
+      if (m) peso = m[1];
+    }
+    if (!vol){
+      const m = $("#didiNombre").value.match(/(\d+(?:[.,]\d+)?)\s*(?:ml|l|lt|lts)/i);
+      if (m) vol = m[1];
+    }
+    $("#didiPeso").value = peso;
+    $("#didiVolumen").value = vol;
+
+    // Foto
+    const photoBox = $("#didiPhotoBox");
+    const photoStatus = $("#didiPhotoStatus");
+    if (item.image){
+      photoBox.innerHTML = `<img src="${item.image.url}" alt="${item.sku}">`;
+      photoStatus.textContent = "âœ… Estado: Con foto lista";
+      photoStatus.style.color = "var(--teal)";
+      $("#didiDownloadPhotoBtn").disabled = false;
+      $("#didiEditPhotoBtn").disabled = false;
+    } else {
+      photoBox.innerHTML = `<div class="didi-photo-box empty">â˜ï¸<br>Agregar foto<br><span style="font-size:0.65rem; color:var(--danger);">Sin foto</span></div>`;
+      photoStatus.textContent = "âš ï¸ Estado: Sin foto asignada";
+      photoStatus.style.color = "var(--danger)";
+      $("#didiDownloadPhotoBtn").disabled = true;
+      $("#didiEditPhotoBtn").disabled = true;
+    }
+
+    $("#didiProductCounter").textContent = `${currentDidiIndex + 1} / ${items.length}`;
+    $("#didiPrevBtn").disabled = (currentDidiIndex <= 0);
+    $("#didiNextBtn").disabled = (currentDidiIndex >= items.length - 1);
+  }
+
+  function saveCurrentDidiProduct(){
+    const item = items[currentDidiIndex];
+    if (!item) return;
+    item.title = $("#didiNombre").value.trim();
+    item.desc = $("#didiDesc").value.trim();
+    item.aiCategory = $("#didiCategoria").value.trim();
+    item.revisado = true;
+
+    setNote(item.skuNorm, {
+      title: item.title,
+      desc: item.desc,
+      aiCategory: item.aiCategory,
+      revisado: true
+    });
+
+    dbSaveAll();
+    renderResumen();
+    renderCatalog();
+    toast(`Guardado en PC: SKU ${item.sku}`);
+  }
+
+  $("#didiCloseBtn").addEventListener("click", closeDidiModal);
+  $("#didiSaveBtn").addEventListener("click", saveCurrentDidiProduct);
+
+  $("#didiPrevBtn").addEventListener("click", () => {
+    saveCurrentDidiProduct();
+    if (currentDidiIndex > 0){
+      currentDidiIndex--;
+      renderDidiModalData(items[currentDidiIndex]);
+    }
+  });
+
+  $("#didiNextBtn").addEventListener("click", () => {
+    saveCurrentDidiProduct();
+    if (currentDidiIndex < items.length - 1){
+      currentDidiIndex++;
+      renderDidiModalData(items[currentDidiIndex]);
+    }
+  });
+
+  // Botones de mejora IA dentro de la modal de Didi
+  $("#didiImproveTitleBtn").addEventListener("click", async () => {
+    const item = items[currentDidiIndex];
+    if (!item) return;
+    const btn = $("#didiImproveTitleBtn"); btn.disabled = true;
+    await improveProduct(item, true, false);
+    $("#didiNombre").value = item.title;
+    btn.disabled = false;
+    toast("TÃ­tulo mejorado");
+  });
+
+  $("#didiImproveDescBtn").addEventListener("click", async () => {
+    const item = items[currentDidiIndex];
+    if (!item) return;
+    const btn = $("#didiImproveDescBtn"); btn.disabled = true;
+    await improveProduct(item, false, true);
+    $("#didiDesc").value = item.desc;
+    btn.disabled = false;
+    toast("DescripciÃ³n mejorada");
+  });
+
+  $("#didiImproveAllBtn").addEventListener("click", async () => {
+    const item = items[currentDidiIndex];
+    if (!item) return;
+    const btn = $("#didiImproveAllBtn"); btn.disabled = true; btn.textContent = "Mejorandoâ€¦";
+    await improveProduct(item, true, true);
+    $("#didiNombre").value = item.title;
+    $("#didiDesc").value = item.desc;
+    btn.disabled = false; btn.textContent = "âœ¨ Mejorar todo con IA";
+    toast("TÃ­tulo y descripciÃ³n mejorados");
+  });
+
+  // Copiar campo individual
+  document.querySelectorAll(".copy-btn[data-target]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const targetId = btn.dataset.target;
+      const el = document.getElementById(targetId);
+      if (el && el.value){
+        try{
+          await navigator.clipboard.writeText(el.value);
+          const orig = btn.textContent;
+          btn.textContent = "âœ“ Â¡Copiado!";
+          setTimeout(() => btn.textContent = orig, 1300);
+        }catch(e){
+          el.select();
+          toast("Presiona Ctrl+C");
+        }
+      } else {
+        toast("Campo vacÃ­o");
+      }
+    });
+  });
+
+  // Copiar ficha completa
+  $("#didiCopyAllBtn").addEventListener("click", async () => {
+    const item = items[currentDidiIndex];
+    if (!item) return;
+    const text = [
+      `CÃ³digo de barras / SKU: ${$("#didiSku").value}`,
+      `Nombre del artÃ­culo: ${$("#didiNombre").value}`,
+      `DescripciÃ³n: ${$("#didiDesc").value}`,
+      `IdentificaciÃ³n adicional: ${$("#didiSkuOrig").value}`,
+      `Precio: $${$("#didiPrecio").value}`,
+      `Stock: ${$("#didiStock").value}`,
+      `CategorÃ­a: ${$("#didiCategoria").value}`,
+      `Peso: ${$("#didiPeso").value} g`,
+      `Volumen: ${$("#didiVolumen").value} ml`,
+      `Almacenamiento: ${$("#didiAlmacenamiento").value}`
+    ].join("\n");
+    try{
+      await navigator.clipboard.writeText(text);
+      toast("Ficha completa copiada para Didi Food");
+    }catch(e){
+      toast("No se pudo copiar");
+    }
+  });
+
+  // Fotos desde la modal de Didi
+  $("#didiPhotoInput").addEventListener("change", (e) => {
+    const f = e.target.files[0];
+    if (!f || !items[currentDidiIndex]) return;
+    const item = items[currentDidiIndex];
+    const newImg = {file:f, name:f.name, base:"__manual__"+item.skuNorm, numKey:item.sku, url:URL.createObjectURL(f)};
+    manualImages.set(item.skuNorm, newImg);
+    dbSaveImages([newImg]);
+    rebuildItems();
+    renderDidiModalData(items[currentDidiIndex]);
+    toast("Foto adjuntada y guardada en BD local");
+  });
+
+  $("#didiDownloadPhotoBtn").addEventListener("click", async () => {
+    const item = items[currentDidiIndex];
+    if (!item || !item.image) return;
+    const blob = await getDownloadBlob(item);
+    const ext = $("#optimizeToggle").checked ? ".jpg" : (item.image.name.match(/\.[^.]+$/) || [".jpg"])[0];
+    await saveFile(`${item.sku}${ext}`, blob);
+  });
+
+  $("#didiEditPhotoBtn").addEventListener("click", () => {
+    const item = items[currentDidiIndex];
+    if (!item || !item.image) return;
+    openEditor(item);
+  });
+
+  // ---------- MODAL CONFIGURACIÃ“N IA ----------
+  const aiConfigModal = $("#aiConfigModal");
+  $("#btnOpenAiConfig").addEventListener("click", () => {
+    $("#aiProviderSelect").value = aiConfig.provider || "local";
+    $("#aiApiKey").value = aiConfig.apiKey || "";
+    $("#apiKeyWrap").style.display = aiConfig.provider === "local" ? "none" : "block";
+    aiConfigModal.classList.add("show");
+  });
+
+  $("#aiProviderSelect").addEventListener("change", (e) => {
+    $("#apiKeyWrap").style.display = e.target.value === "local" ? "none" : "block";
+  });
+
+  $("#aiConfigCancelBtn").addEventListener("click", () => aiConfigModal.classList.remove("show"));
+  $("#aiConfigCloseBtn").addEventListener("click", () => aiConfigModal.classList.remove("show"));
+
+  $("#aiConfigSaveBtn").addEventListener("click", () => {
+    aiConfig.provider = $("#aiProviderSelect").value;
+    aiConfig.apiKey = $("#aiApiKey").value.trim();
+    saveAiConfig(aiConfig);
+    aiConfigModal.classList.remove("show");
+    const hint = $("#iaHint");
+    if (hint){
+      hint.textContent = aiConfig.provider === "local"
+        ? "Listo para usar: Motor Inteligente Local (100% offline y gratis en tu PC)."
+        : `Conectado con ${aiConfig.provider.toUpperCase()} API.`;
+      hint.style.color = "var(--teal)";
+    }
+    toast("ConfiguraciÃ³n de IA guardada");
+  });
+
+  // BotÃ³n Limpiar BD en Sidebar
+  const btnClearDb = $("#btnClearDb");
+  if (btnClearDb) btnClearDb.addEventListener("click", dbClearAll);
+
+  // Atajos de teclado para Modal Didi
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape"){
+      closeDidiModal();
+      aiConfigModal.classList.remove("show");
+    }
+    if (didiModal.classList.contains("show") && !["INPUT", "TEXTAREA"].includes(document.activeElement.tagName)){
+      if (e.key === "ArrowLeft") $("#didiPrevBtn").click();
+      if (e.key === "ArrowRight") $("#didiNextBtn").click();
+    }
+  });
+
+  
+  // ---------- SELECTOR DE FOTOS (photo picker modal) ----------
+  var photoPickerItem = null;
+
+  function openPhotoPicker(item){
+    photoPickerItem = item;
+    $("#photoPickerTitle").textContent = "Asignar foto → SKU " + item.sku;
+    $("#photoPickerSearch").value = "";
+    renderPhotoPickerGrid("");
+    $("#photoPickerOverlay").classList.add("show");
+  }
+
+  function closePhotoPicker(){
+    $("#photoPickerOverlay").classList.remove("show");
+    photoPickerItem = null;
+  }
+
+  function renderPhotoPickerGrid(filter){
+    var grid = $("#photoPickerGrid");
+    grid.innerHTML = "";
+    var usedBases = new Set(items.filter(function(i){ return i.image; }).map(function(i){ return i.image.base; }));
+    var list = images.filter(function(im){
+      if (!filter) return true;
+      return im.name.toLowerCase().includes(filter.toLowerCase());
+    });
+    if (!list.length){
+      grid.innerHTML = '<p style="color:var(--muted); font-size:0.82rem; grid-column:1/-1;">No hay fotos subidas aun.</p>';
+      return;
+    }
+    list.forEach(function(im){
+      var isUsed = usedBases.has(im.base);
+      var wrap = document.createElement("div");
+      wrap.style.cssText = "position:relative; border-radius:9px; overflow:hidden; cursor:pointer; border:2px solid " + (isUsed ? "var(--teal)" : "var(--danger)") + "; aspect-ratio:1;";
+      wrap.title = im.name + (isUsed ? " (asignada)" : " (sin usar)");
+      var img2 = document.createElement("img");
+      img2.src = im.url;
+      img2.style.cssText = "width:100%; height:100%; object-fit:cover; display:block;";
+      wrap.appendChild(img2);
+      var badge = document.createElement("div");
+      badge.style.cssText = "position:absolute; bottom:0; left:0; right:0; background:" + (isUsed ? "#1E6F63CC" : "#AE3A26CC") + "; color:#fff; font-size:0.58rem; padding:3px 5px; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;";
+      badge.textContent = im.name;
+      wrap.appendChild(badge);
+      wrap.addEventListener("click", function(){
+        if (!photoPickerItem) return;
+        manualImages.set(photoPickerItem.skuNorm, im);
+        rebuildItems();
+        toast("Foto " + im.name + " asignada al SKU " + photoPickerItem.sku);
+        dbSaveImages([]);
+        closePhotoPicker();
+      });
+      grid.appendChild(wrap);
+    });
+  }
+
+  $("#photoPickerClose").addEventListener("click", closePhotoPicker);
+  $("#photoPickerOverlay").addEventListener("click", function(e){ if (e.target === $("#photoPickerOverlay")) closePhotoPicker(); });
+  $("#photoPickerSearch").addEventListener("input", function(e){ renderPhotoPickerGrid(e.target.value); });
+
+  $("#photoPickerUpload").addEventListener("change", function(e){
+    var files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    var newImgs = files.map(function(f){
+      return { file:f, name:f.name, base:normKey(stripExt(f.name)), numKey:extractSkuNumber(stripExt(f.name)), url:URL.createObjectURL(f) };
+    });
+    newImgs.forEach(function(ni){
+      var existing = images.findIndex(function(im){ return im.name === ni.name; });
+      if (existing >= 0) images[existing] = ni; else images.push(ni);
+    });
+    rebuildItems();
+    renderPhotoPickerGrid($("#photoPickerSearch").value);
+    toast(files.length + " foto(s) nueva(s) subidas");
+    dbSaveImages(newImgs);
+    e.target.value = "";
+  });
+  // ---------- NAVEGACIÃ“N ENTRE VISTAS ----------
+  function switchView(viewName){
+    // Actualizar botones del nav
+    document.querySelectorAll("#navlist button").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.view === viewName);
+    });
+    // Mostrar/ocultar secciones
+    document.querySelectorAll(".view").forEach(sec => {
+      sec.classList.toggle("active", sec.id === "view-" + viewName);
+    });
+    // Actualizar tÃ­tulo del topbar
+    const titles = { resumen: "Resumen", catalogo: "CatÃ¡logo", comparar: "Comparar con Rappi" };
+    const subs = {
+      resumen: "Estado general de tu catÃ¡logo.",
+      catalogo: "Todos los productos con sus fotos y fichas para Didi Food.",
+      comparar: "Compara este catÃ¡logo con tu tienda de Rappi."
+    };
+    const t = $("#topbarTitle"); if (t) t.textContent = titles[viewName] || viewName;
+    const s = $("#topbarSubtitle"); if (s) s.textContent = subs[viewName] || "";
+  }
+
+  $("#navlist").addEventListener("click", function(e){
+    const btn = e.target.closest("button[data-view]");
+    if (!btn) return;
+    switchView(btn.dataset.view);
+  });
+
+  // Carga inicial desde Base de Datos local
+  dbLoadAll();
+
+})();
+</script>
+</body>
+</html>

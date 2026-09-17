@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Panel de catÃ¡logo â€” SKU + fotos</title>
+<title>Panel de catálogo — SKU + fotos</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -171,7 +171,7 @@
   .editor-actions{display:flex; gap:8px; margin-top:16px;}
   .editor-actions button{flex:1;}
 
-  /* Estilos especÃ­ficos Modal Didi Food */
+  /* Estilos específicos Modal Didi Food */
   .didi-header{display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border); padding-bottom:12px; margin-bottom:14px;}
   .didi-header h2{margin:0; font-size:1.15rem; font-weight:700; display:flex; align-items:center; gap:8px;}
   .didi-header .close-btn{background:none; border:none; font-size:1.3rem; line-height:1; padding:4px 8px; cursor:pointer; color:var(--muted);}
@@ -195,24 +195,29 @@
   .didi-footer-nav{display:flex; justify-content:space-between; align-items:center; gap:8px; border-top:1px solid var(--border); padding-top:14px; margin-top:18px; flex-wrap:wrap;}
   .badge-db{background:#1E6F6322; color:var(--teal); font-size:0.68rem; font-weight:600; padding:2px 7px; border-radius:6px; border:1px solid var(--teal);}
 </style>
+
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+
 </head>
 <body>
 
 <div class="shell">
   <aside class="sidebar">
-    <div class="brand">ðŸ“¦ Panel de catÃ¡logo</div>
+    <div class="brand">📦 Panel de catálogo</div>
 
     <div class="navlist" id="navlist">
-      <button data-view="resumen" class="active">Resumen <span class="count" id="navCountResumen">â€“</span></button>
-      <button data-view="catalogo">CatÃ¡logo <span class="count" id="navCountCatalogo">0</span></button>
-      <button data-view="comparar">Comparar Rappi <span class="count" id="navCountComparar">â€“</span></button>
+      <button data-view="resumen" class="active">Resumen <span class="count" id="navCountResumen">–</span></button>
+      <button data-view="catalogo">Catálogo <span class="count" id="navCountCatalogo">0</span></button>
+      <button data-view="comparar">Comparar Rappi <span class="count" id="navCountComparar">–</span></button>
     </div>
 
     <div class="side-block">
-      <h3>1 Â· Excel con SKU</h3>
+      <h3>1 · Excel con SKU</h3>
       <label class="file-drop">
         <input type="file" id="excelInput" accept=".xlsx,.xls,.csv">
-        ðŸ“„ Subir Excel / CSV
+        📄 Subir Excel / CSV
         <span class="fname" id="excelName"></span>
       </label>
       <div id="excelCols" style="display:none;">
@@ -222,56 +227,56 @@
         <select id="nameCol"></select>
         <label class="field-label" style="color:#9EA19B; margin-top:6px;">Columna del Precio</label>
         <select id="priceCol"></select>
-        <label class="field-label" style="color:#9EA19B; margin-top:6px;">Columna de CategorÃ­a</label>
+        <label class="field-label" style="color:#9EA19B; margin-top:6px;">Columna de Categoría</label>
         <select id="catColSel"></select>
       </div>
     </div>
 
     <div class="side-block">
-      <h3>2 Â· Fotos</h3>
-      <p class="hint">El nombre del archivo (nÃºmero) = SKU.</p>
+      <h3>2 · Fotos</h3>
+      <p class="hint">El nombre del archivo (número) = SKU.</p>
       <label class="file-drop">
         <input type="file" id="photosInput" accept="image/*" multiple>
-        ðŸ–¼ï¸ Subir fotos
+        🖼️ Subir fotos
         <span class="fname" id="photosName"></span>
       </label>
     </div>
 
-    <div class="side-block">
-    <div class="side-block">
+        <div class="side-block">
       <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h3 style="margin:0;">ðŸ’¾ Base de Datos Local</h3>
-        <span class="badge-db" id="dbBadge">0 guardados</span>
+        <h3 style="margin:0;">🔥 Base de Datos Firebase</h3>
+        <span class="badge-db" id="dbBadge" style="background:#FFA00022; color:#FFA000; border-color:#FFA000;">Nube Google</span>
       </div>
-      <p class="hint" id="dbHint">Todo lo que subas se guarda en este PC automÃ¡ticamente. Si cierras el navegador, no se pierde nada.</p>
-      <button class="wide" id="btnClearDb" style="color:var(--danger); border-color:var(--border);">ðŸ—‘ï¸ Limpiar BD / Nuevo catÃ¡logo</button>
+      <p class="hint" id="dbHint">Conectado a Firebase en la nube. Todo se guarda automáticamente 24/7 y se sincroniza en tiempo real.</p>
+      <button class="wide primary" id="btnSyncFb" style="font-size:0.75rem;">☁️ Sincronizar con Firebase</button>
+      <button class="wide" id="btnClearDb" style="color:var(--danger); border-color:var(--border); font-size:0.72rem; margin-top:2px;">🗑️ Limpiar BD / Nuevo catálogo</button>
     </div>
 
     <div class="side-block">
-      <h3>âœ¨ IA (TÃ­tulos y Descripciones)</h3>
-      <button class="wide primary" id="btnImproveAll">âœ¨ Mejorar tÃ­tulos y descripciones</button>
-      <button class="wide" id="btnClassify">ðŸ·ï¸ Clasificar categorÃ­as</button>
+      <h3>✨ IA (Títulos y Descripciones)</h3>
+      <button class="wide primary" id="btnImproveAll">✨ Mejorar títulos y descripciones</button>
+      <button class="wide" id="btnClassify">ðŸ·ï¸ Clasificar categorías</button>
       <button class="wide" id="btnOpenAiConfig" style="font-size:0.72rem;">âš™ï¸ Configurar API Key (Opcional)</button>
-      <p class="hint" id="iaHint" style="color:var(--teal);">Listo para usar. Utiliza optimizaciÃ³n inteligente local para Didi Food (o tu API Key de Gemini/OpenAI si la configuras).</p>
+      <p class="hint" id="iaHint" style="color:var(--teal);">Listo para usar. Utiliza optimización inteligente local para Didi Food (o tu API Key de Gemini/OpenAI si la configuras).</p>
     </div>
 
     <div class="side-block">
       <h3>Exportar</h3>
-      <button class="wide primary" id="btnExportCsv" disabled>CSV del catÃ¡logo</button>
-      <button class="wide" id="btnExportXlsx" disabled>Excel (.xlsx) del catÃ¡logo</button>
-      <button class="wide danger" id="btnExportMissingSide" disabled>âš ï¸ Excel faltantes de foto (<span id="sideMissingCount">0</span>)</button>
+      <button class="wide primary" id="btnExportCsv" disabled>CSV del catálogo</button>
+      <button class="wide" id="btnExportXlsx" disabled>Excel (.xlsx) del catálogo</button>
+      <button class="wide danger" id="btnExportMissingSide" disabled>⚠️ Excel faltantes de foto (<span id="sideMissingCount">0</span>)</button>
       <button class="wide" id="btnExportZip" disabled>Fotos en .zip</button>
-      <label class="toggle-line"><input type="checkbox" id="optimizeToggle" checked> Optimizar fotos (cuadradas, mÃ¡x. 1080px) al descargar</label>
+      <label class="toggle-line"><input type="checkbox" id="optimizeToggle" checked> Optimizar fotos (cuadradas, máx. 1080px) al descargar</label>
     </div>
 
-    <p class="note">Base de datos local en tu equipo (IndexedDB). El Excel y las fotos se guardan en tu navegador sin subirse a ningÃºn servidor externo.</p>
+    <p class="note">Base de datos local en tu equipo (IndexedDB). El Excel y las fotos se guardan en tu navegador sin subirse a ningún servidor externo.</p>
   </aside>
 
   <div class="main-col">
     <div class="topbar">
       <div>
         <h1 id="topbarTitle">Resumen</h1>
-        <p id="topbarSubtitle">Sube tu Excel y tus fotos para ver el estado de tu catÃ¡logo.</p>
+        <p id="topbarSubtitle">Sube tu Excel y tus fotos para ver el estado de tu catálogo.</p>
       </div>
     </div>
 
@@ -312,7 +317,7 @@
       <!-- CATALOGO -->
       <section class="view" id="view-catalogo">
         <div class="toolbar">
-          <input type="text" id="search" placeholder="Buscar por SKU, nombre, categorÃ­aâ€¦">
+          <input type="text" id="search" placeholder="Buscar por SKU, nombre, categoríaâ€¦">
           <div class="chip-row" id="filterChips">
             <span class="chip active" data-filter="todos">Todos (<b id="chipCountTodos">0</b>)</span>
             <span class="chip" data-filter="con">Con foto (<b id="chipCountCon">0</b>)</span>
@@ -324,7 +329,7 @@
             <option value="pendiente">Pendientes</option>
           </select>
           <select id="categoriaSelect">
-            <option value="todas">Todas las categorÃ­as</option>
+            <option value="todas">Todas las categorías</option>
           </select>
           <select id="sortSelect">
             <option value="sku">Ordenar: SKU</option>
@@ -340,7 +345,7 @@
           <button id="bulkImprove">Mejorar texto (lote)</button>
           <button id="bulkCopy">Copiar descripciones</button>
           <button id="bulkExport">Exportar seleccionados (CSV)</button>
-          <button id="bulkClear">Quitar selecciÃ³n</button>
+          <button id="bulkClear">Quitar selección</button>
         </div>
 
         <div id="gridWrap">
@@ -351,8 +356,8 @@
       <!-- COMPARAR -->
       <section class="view" id="view-comparar">
         <div class="panel-box">
-          <h2>Comparar con tu catÃ¡logo de Rappi</h2>
-          <p class="hint" style="color:var(--muted); font-size:0.8rem;">No puedo conectarme directamente a tu tienda Rappi desde aquÃ­. Exporta el listado de SKUs desde tu panel de Rappi a Excel/CSV y lo comparo contra este catÃ¡logo.</p>
+          <h2>Comparar con tu catálogo de Rappi</h2>
+          <p class="hint" style="color:var(--muted); font-size:0.8rem;">No puedo conectarme directamente a tu tienda Rappi desde aquí. Exporta el listado de SKUs desde tu panel de Rappi a Excel/CSV y lo comparo contra este catálogo.</p>
           <label class="file-drop" style="border-color:var(--border); color:var(--muted); background:var(--panel-2); max-width:320px;">
             <input type="file" id="rappiInput" accept=".xlsx,.xls,.csv">
             ðŸ” Subir Excel de Rappi
@@ -386,7 +391,7 @@
         âž• Subir foto nueva
       </label>
     </div>
-    <p style="font-size:0.74rem; color:var(--muted); margin:0 0 10px;">Haz clic en una foto para asignarla al producto. Las fotos <span style="color:var(--danger); font-weight:600;">rojas</span> no estÃ¡n asignadas a ningÃºn producto.</p>
+    <p style="font-size:0.74rem; color:var(--muted); margin:0 0 10px;">Haz clic en una foto para asignarla al producto. Las fotos <span style="color:var(--danger); font-weight:600;">rojas</span> no están asignadas a ningún producto.</p>
     <div id="photoPickerGrid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:10px; max-height:55vh; overflow-y:auto; padding:2px;"></div>
   </div>
 </div>
@@ -413,7 +418,7 @@
       <label style="display:flex; align-items:center; gap:6px; color:var(--text); font-size:0.82rem;">
         <input type="checkbox" id="editorWhiteBg"> Rellenar fondo transparente con blanco
       </label>
-      <p style="margin:4px 0 0; font-size:0.7rem; color:var(--muted);">Arrastra la foto para moverla dentro del cuadro. El fondo a cuadros indica transparencia (PNG); si tu foto ya tiene fondo blanco sÃ³lido, no necesitas marcar esta opciÃ³n.</p>
+      <p style="margin:4px 0 0; font-size:0.7rem; color:var(--muted);">Arrastra la foto para moverla dentro del cuadro. El fondo a cuadros indica transparencia (PNG); si tu foto ya tiene fondo blanco sólido, no necesitas marcar esta opción.</p>
     </div>
     <div class="editor-actions">
       <button id="editorCancel">Cancelar</button>
@@ -426,45 +431,45 @@
 <div class="modal-overlay" id="didiModal">
   <div class="modal-box wide-modal">
     <div class="didi-header">
-      <h2><span>ðŸ½ï¸</span> Ficha de artÃ­culo â€” Didi Food</h2>
+      <h2><span>ðŸ½ï¸</span> Ficha de artículo — Didi Food</h2>
       <button class="close-btn" id="didiCloseBtn" title="Cerrar (Esc)">âœ•</button>
     </div>
 
     <div class="didi-section-title">
-      <span>InformaciÃ³n bÃ¡sica</span>
-      <button class="ai-btn-inline" id="didiImproveAllBtn">âœ¨ Mejorar todo con IA</button>
+      <span>Información básica</span>
+      <button class="ai-btn-inline" id="didiImproveAllBtn">✨ Mejorar todo con IA</button>
     </div>
 
     <div class="didi-form-grid">
-      <!-- CÃ³digo de barras / SKU -->
+      <!-- Código de barras / SKU -->
       <div class="didi-field">
-        <label>CÃ³digo de barras del artÃ­culo / SKU</label>
+        <label>Código de barras del artículo / SKU</label>
         <div class="didi-input-wrap">
-          <input type="text" id="didiSku" placeholder="CÃ³digo de barras o SKU">
+          <input type="text" id="didiSku" placeholder="Código de barras o SKU">
           <button class="copy-btn" data-target="didiSku">ðŸ“‹ Copiar</button>
         </div>
       </div>
 
-      <!-- Nombre del artÃ­culo -->
+      <!-- Nombre del artículo -->
       <div class="didi-field">
-        <label>Nombre del artÃ­culo</label>
+        <label>Nombre del artículo</label>
         <div class="didi-input-wrap">
           <input type="text" id="didiNombre" placeholder="Nombre comercial del producto">
-          <button class="ai-btn-inline" id="didiImproveTitleBtn">âœ¨ Mejorar</button>
+          <button class="ai-btn-inline" id="didiImproveTitleBtn">✨ Mejorar</button>
           <button class="copy-btn" data-target="didiNombre">ðŸ“‹ Copiar</button>
         </div>
       </div>
 
       <!-- Agregar / Ver foto -->
       <div class="didi-field">
-        <label>Foto del artÃ­culo (Requisitos: JPG, PNG, al menos 150x150)</label>
+        <label>Foto del artículo (Requisitos: JPG, PNG, al menos 150x150)</label>
         <div class="didi-photo-section">
           <div class="didi-photo-box" id="didiPhotoBox">
             <span class="empty">Sin foto</span>
           </div>
           <div class="didi-photo-meta">
             <p id="didiPhotoStatus" style="font-weight:600;">Estado: Sin foto asignada</p>
-            <p style="font-size:0.7rem;">Puedes cambiar o editar la imagen aquÃ­ mismo para que cumpla los requisitos de Didi Food.</p>
+            <p style="font-size:0.7rem;">Puedes cambiar o editar la imagen aquí mismo para que cumpla los requisitos de Didi Food.</p>
             <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:4px;">
               <label class="copy-btn" style="cursor:pointer;">
                 ðŸ“· Subir foto
@@ -477,23 +482,23 @@
         </div>
       </div>
 
-      <!-- DescripciÃ³n -->
+      <!-- Descripción -->
       <div class="didi-field">
-        <label>DescripciÃ³n (Describe los ingredientes, mÃ©todos de preparaciÃ³n, etc.)</label>
+        <label>Descripción (Describe los ingredientes, métodos de preparación, etc.)</label>
         <div class="didi-input-wrap" style="align-items:flex-start;">
-          <textarea id="didiDesc" rows="3" placeholder="DescripciÃ³n atractiva para los clientes de Didi Food"></textarea>
+          <textarea id="didiDesc" rows="3" placeholder="Descripción atractiva para los clientes de Didi Food"></textarea>
           <div style="display:flex; flex-direction:column; gap:4px;">
-            <button class="ai-btn-inline" id="didiImproveDescBtn">âœ¨ Mejorar</button>
+            <button class="ai-btn-inline" id="didiImproveDescBtn">✨ Mejorar</button>
             <button class="copy-btn" data-target="didiDesc">ðŸ“‹ Copiar</button>
           </div>
         </div>
       </div>
 
-      <!-- IdentificaciÃ³n adicional -->
+      <!-- Identificación adicional -->
       <div class="didi-field">
-        <label>IdentificaciÃ³n adicional (Nombre original del Excel)</label>
+        <label>Identificación adicional (Nombre original del Excel)</label>
         <div class="didi-input-wrap">
-          <input type="text" id="didiSkuOrig" placeholder="IdentificaciÃ³n adicional">
+          <input type="text" id="didiSkuOrig" placeholder="Identificación adicional">
           <button class="copy-btn" data-target="didiSkuOrig">ðŸ“‹ Copiar</button>
         </div>
       </div>
@@ -516,9 +521,9 @@
         </div>
       </div>
 
-      <!-- CategorÃ­a definida por la tienda -->
+      <!-- Categoría definida por la tienda -->
       <div class="didi-field">
-        <label>CategorÃ­a definida por la tienda</label>
+        <label>Categoría definida por la tienda</label>
         <div class="didi-input-wrap">
           <input type="text" id="didiCategoria" list="didiCatList" placeholder="Ej: Bebidas, Snacks, Abarrotes...">
           <datalist id="didiCatList"></datalist>
@@ -526,8 +531,8 @@
         </div>
       </div>
 
-      <!-- MÃ¡s informaciÃ³n -->
-      <div class="didi-section-title">MÃ¡s informaciÃ³n</div>
+      <!-- Más información -->
+      <div class="didi-section-title">Más información</div>
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
         <div class="didi-field">
           <label>Peso (g)</label>
@@ -547,7 +552,7 @@
 
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
         <div class="didi-field">
-          <label>CondiciÃ³n de almacenamiento</label>
+          <label>Condición de almacenamiento</label>
           <select id="didiAlmacenamiento">
             <option value="Ambiente">Ambiente</option>
             <option value="Refrigerado">Refrigerado</option>
@@ -561,7 +566,7 @@
       </div>
     </div>
 
-    <!-- NavegaciÃ³n inferior -->
+    <!-- Navegación inferior -->
     <div class="didi-footer-nav">
       <div style="display:flex; gap:6px;">
         <button id="didiPrevBtn">â¬… Anterior</button>
@@ -580,23 +585,23 @@
 <div class="modal-overlay" id="aiConfigModal">
   <div class="modal-box">
     <div class="didi-header">
-      <h2>âš™ï¸ ConfiguraciÃ³n de IA</h2>
+      <h2>âš™ï¸ Configuración de IA</h2>
       <button class="close-btn" id="aiConfigCloseBtn">âœ•</button>
     </div>
     <p style="font-size:0.78rem; color:var(--muted); line-height:1.4;">
-      Por defecto, el panel usa un <b>motor inteligente local optimizado para Didi Food</b> que funciona sin internet, gratis y sin lÃ­mites en tu PC.
+      Por defecto, el panel usa un <b>motor inteligente local optimizado para Didi Food</b> que funciona sin internet, gratis y sin límites en tu PC.
     </p>
     <div class="didi-field" style="margin-top:10px;">
       <label>Modo de IA</label>
       <select id="aiProviderSelect">
-        <option value="local">Motor Inteligente Local (Gratis, offline, instantÃ¡neo)</option>
+        <option value="local">Motor Inteligente Local (Gratis, offline, instantáneo)</option>
         <option value="gemini">Google Gemini (Requiere API Key gratuita)</option>
         <option value="openai">OpenAI ChatGPT (Requiere API Key)</option>
       </select>
     </div>
     <div class="didi-field" id="apiKeyWrap" style="display:none; margin-top:10px;">
       <label>API Key</label>
-      <input type="password" id="aiApiKey" placeholder="Pega tu clave aquÃ­ (se guarda solo en tu PC)">
+      <input type="password" id="aiApiKey" placeholder="Pega tu clave aquí (se guarda solo en tu PC)">
     </div>
     <div class="editor-actions" style="margin-top:16px;">
       <button id="aiConfigCancelBtn">Cancelar</button>
@@ -614,7 +619,7 @@
   let nameColIndex = -1, priceColIndex = -1, catColIndex = -1; // columnas mapeadas por usuario
   let images = [];
   let items = [];
-  let manualAssign = new Map(); // skuNorm -> imageBase (asignaciÃ³n desde fotos huÃ©rfanas)
+  let manualAssign = new Map(); // skuNorm -> imageBase (asignación desde fotos huérfanas)
   let manualImages = new Map(); // skuNorm -> {file,name,url} (foto propia adjuntada por producto)
   let selected = new Set(); // sku
   let currentFilter = "todos", estadoFilter = "todos", categoriaFiltro = "todas", sortBy = "sku", searchTerm = "";
@@ -626,6 +631,177 @@
   function loadNotes(){ try{ return JSON.parse(localStorage.getItem(NOTES_KEY) || "{}"); }catch(e){ return {}; } }
   function saveNotes(n){ localStorage.setItem(NOTES_KEY, JSON.stringify(n)); }
   let notes = loadNotes();
+
+  // ---------- FIREBASE CLOUD DATABASE & STORAGE ----------
+  const firebaseConfig = {
+    apiKey: "AIzaSyD76rUimvOSwUeXeEViLsY3pQtTU1VA3iA",
+    authDomain: "adminproduct-1017d.firebaseapp.com",
+    projectId: "adminproduct-1017d",
+    storageBucket: "adminproduct-1017d.firebasestorage.app",
+    messagingSenderId: "60815049251",
+    appId: "1:60815049251:web:75b61327597e0784506796",
+    measurementId: "G-GX6Z1994C7"
+  };
+
+  let fbApp = null, fbDb = null, fbStorage = null;
+  let isFirebaseReady = false;
+
+  try {
+    if (typeof firebase !== "undefined") {
+      fbApp = firebase.initializeApp(firebaseConfig);
+      fbDb = firebase.firestore();
+      fbStorage = firebase.storage();
+      isFirebaseReady = true;
+      console.log("🔥 Firebase conectado exitosamente a:", firebaseConfig.projectId);
+    }
+  } catch(e) {
+    console.warn("Error iniciando Firebase:", e);
+  }
+
+  // Guardar catálogo en Firestore
+  async function fbSaveAll() {
+    if (!isFirebaseReady || !items.length) return;
+    try {
+      // 1. Guardar metadata
+      await fbDb.collection("catalog").doc("meta").set({
+        excelHeaders: excelHeaders,
+        rawExcelAOA: rawExcelAOA,
+        skuColIndex: skuColIndex,
+        nameColIndex: nameColIndex,
+        priceColIndex: priceColIndex,
+        catColIndex: catColIndex,
+        notes: notes,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+
+      // 2. Guardar productos en lotes
+      const BATCH_SIZE = 400;
+      for (let i = 0; i < items.length; i += BATCH_SIZE) {
+        const batch = fbDb.batch();
+        const chunk = items.slice(i, i + BATCH_SIZE);
+        chunk.forEach(item => {
+          const docRef = fbDb.collection("products").doc(item.skuNorm);
+          const imgUrl = (item.image && item.image.url && !item.image.url.startsWith("blob:")) ? item.image.url : (item.imageUrl || "");
+          const imgName = (item.image && item.image.name) ? item.image.name : (item.imageName || "");
+          batch.set(docRef, {
+            sku: item.sku,
+            skuNorm: item.skuNorm,
+            title: item.title || "",
+            desc: item.desc || "",
+            aiCategory: item.aiCategory || null,
+            revisado: !!item.revisado,
+            imageUrl: imgUrl,
+            imageName: imgName,
+            row: item.row || {}
+          }, { merge: true });
+        });
+        await batch.commit();
+      }
+      console.log("🔥 Catálogo guardado en Firebase Firestore.");
+    } catch(e) {
+      console.error("Error guardando en Firestore:", e);
+    }
+  }
+
+  // Cargar catálogo desde Firestore
+  async function fbLoadAll() {
+    if (!isFirebaseReady) return false;
+    try {
+      const metaDoc = await fbDb.collection("catalog").doc("meta").get();
+      if (!metaDoc.exists) return false;
+      const meta = metaDoc.data();
+      excelHeaders = meta.excelHeaders || [];
+      rawExcelAOA = meta.rawExcelAOA || [];
+      skuColIndex = meta.skuColIndex !== undefined ? meta.skuColIndex : 0;
+      nameColIndex = meta.nameColIndex !== undefined ? meta.nameColIndex : -1;
+      priceColIndex = meta.priceColIndex !== undefined ? meta.priceColIndex : -1;
+      catColIndex = meta.catColIndex !== undefined ? meta.catColIndex : -1;
+      if (meta.notes) {
+        notes = meta.notes;
+        saveNotes(notes);
+      }
+
+      // Cargar productos de Firestore
+      const prodSnap = await fbDb.collection("products").get();
+      if (prodSnap.empty && !rawExcelAOA.length) return false;
+
+      const fbProducts = new Map();
+      prodSnap.forEach(doc => {
+        fbProducts.set(doc.id, doc.data());
+      });
+
+      if (rawExcelAOA.length) {
+        rebuildRowsFromAOA();
+      } else if (fbProducts.size > 0) {
+        excelRows = Array.from(fbProducts.values()).map(p => {
+          const obj = p.row || {};
+          obj.__sku = p.sku;
+          obj.__skuNorm = p.skuNorm;
+          obj.__skuOriginal = p.sku;
+          return obj;
+        });
+      }
+
+      fbProducts.forEach(p => {
+        if (p.imageUrl) {
+          const im = {
+            file: null,
+            name: p.imageName || (p.sku + ".jpg"),
+            base: normKey(stripExt(p.imageName || p.sku)),
+            numKey: p.sku,
+            url: p.imageUrl
+          };
+          manualImages.set(p.skuNorm, im);
+        }
+        if (p.title || p.desc || p.revisado !== undefined) {
+          notes[p.skuNorm] = {
+            title: p.title,
+            desc: p.desc,
+            revisado: p.revisado,
+            aiCategory: p.aiCategory
+          };
+        }
+      });
+
+      if (excelHeaders.length) {
+        $("#excelCols").style.display = "block";
+        populateColSelects();
+      }
+
+      rebuildItems();
+      updateDbBadge();
+      toast("🔥 Conectado a Firebase: " + items.length + " productos cargados de la nube");
+      return true;
+    } catch(e) {
+      console.warn("No se pudo cargar desde Firebase:", e);
+      return false;
+    }
+  }
+
+  // Subir foto a Firebase Storage
+  async function fbUploadPhoto(file, skuNorm, sku) {
+    if (!isFirebaseReady || !fbStorage || !file) return null;
+    try {
+      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+      const safeName = (sku || skuNorm) + "." + ext;
+      const storageRef = fbStorage.ref().child("fotos/" + safeName);
+      const snapshot = await storageRef.put(file);
+      const downloadURL = await snapshot.ref.getDownloadURL();
+      console.log("Foto subida a Firebase Storage:", downloadURL);
+
+      // Guardar URL en el producto de Firestore
+      await fbDb.collection("products").doc(skuNorm).set({
+        imageUrl: downloadURL,
+        imageName: file.name
+      }, { merge: true });
+
+      return { url: downloadURL, name: file.name };
+    } catch(e) {
+      console.error("Error subiendo foto a Firebase Storage:", e);
+      return null;
+    }
+  }
+
 
   const $ = (sel) => document.querySelector(sel);
   const gridWrap = $("#gridWrap");
@@ -642,10 +818,10 @@
 
   function isHeaderRow(val){
     const norm = String(val||"").trim().toLowerCase();
-    return norm === "sku" || norm === "cÃ³digo" || norm === "codigo" || norm === "id" || norm === "referencia";
+    return norm === "sku" || norm === "código" || norm === "codigo" || norm === "id" || norm === "referencia";
   }
 
-  // Extrae solo los nÃºmeros despuÃ©s del guion bajo "_" (ej: Home4Veinte4mt_2913 -> 2913)
+  // Extrae solo los números después del guion bajo "_" (ej: Home4Veinte4mt_2913 -> 2913)
   function extractSkuNumber(raw){
     if (raw === undefined || raw === null) return "";
     const s = String(raw).trim();
@@ -655,13 +831,13 @@
       const match = after.match(/\d+/);
       if (match) return match[0];
     }
-    // Si no contiene guion bajo, buscar si contiene nÃºmero
+    // Si no contiene guion bajo, buscar si contiene número
     const digits = s.match(/\d+/);
     return digits ? digits[0] : s;
   }
 
-  // Guarda un archivo usando la capacidad de Claude si estÃ¡ disponible; si no
-  // (por ejemplo al publicar esta pÃ¡gina en GitHub Pages u otro hosting),
+  // Guarda un archivo usando la capacidad de Claude si está disponible; si no
+  // (por ejemplo al publicar esta página en GitHub Pages u otro hosting),
   // usa la descarga nativa del navegador para que siga funcionando igual.
   async function saveFile(filename, data){
     if (downloadsCap){
@@ -790,7 +966,7 @@
         });
       }
 
-      // â”€â”€ 1. Leer meta en transacciÃ³n propia â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      // â”€â”€ 1. Leer meta en transacción propia â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       const meta = await reqToPromise(
         db.transaction(["meta"], "readonly").objectStore("meta").get("current_catalog")
       );
@@ -804,7 +980,7 @@
       if ($("#excelCols")) $("#excelCols").style.display = "block";
       populateColSelects();
 
-      // â”€â”€ 2. Leer imÃ¡genes en transacciÃ³n propia â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      // â”€â”€ 2. Leer imágenes en transacción propia â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       const storedImgs = await reqToPromise(
         db.transaction(["images"], "readonly").objectStore("images").getAll()
       );
@@ -819,7 +995,7 @@
         if ($("#photosName")) $("#photosName").textContent = `${images.length} foto(s) en BD`;
       }
 
-      // â”€â”€ 3. Leer productos en transacciÃ³n propia â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      // â”€â”€ 3. Leer productos en transacción propia â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       const storedProds = await reqToPromise(
         db.transaction(["products"], "readonly").objectStore("products").getAll()
       );
@@ -845,7 +1021,7 @@
   }
 
   async function dbClearAll(){
-    if (!confirm("Â¿Deseas vaciar la base de datos local y empezar de cero? Se borrarÃ¡n los productos y fotos guardados en este PC.")) return;
+    if (!confirm("¿Deseas vaciar la base de datos local y empezar de cero? Se borrarán los productos y fotos guardados en este PC.")) return;
     try{
       const db = await dbOpen();
       const tx = db.transaction(["products", "images", "meta"], "readwrite");
@@ -864,7 +1040,7 @@
       $("#photosName").textContent = "";
       rebuildItems();
       updateDbBadge();
-      toast("Base de datos local vaciada con Ã©xito");
+      toast("Base de datos local vaciada con éxito");
     }catch(err){
       toast("Error al limpiar base de datos");
     }
@@ -876,10 +1052,10 @@
     const h = $("#dbHint");
     if (h) h.textContent = items.length
       ? `Hay ${items.length} productos y ${images.length} fotos guardados en tu PC.`
-      : "Todo lo que subas se guarda en este PC automÃ¡ticamente. Si cierras el navegador, no se pierde nada.";
+      : "Todo lo que subas se guarda en este PC automáticamente. Si cierras el navegador, no se pierde nada.";
   }
 
-  // ---------- ConfiguraciÃ³n de IA (Local vs API) ----------
+  // ---------- Configuración de IA (Local vs API) ----------
   const AI_CONFIG_KEY = "catalogo_ai_config_v1";
   function loadAiConfig(){
     try{ return JSON.parse(localStorage.getItem(AI_CONFIG_KEY) || '{"provider":"local","apiKey":""}'); }catch(e){ return {provider:"local", apiKey:""}; }
@@ -896,7 +1072,7 @@
 
   // ---------- lectura de excel ----------
   function guessSkuColumn(headers){
-    const patterns = [/^sku$/i, /codigo/i, /cÃ³digo/i, /^id$/i, /referencia/i, /^ref$/i];
+    const patterns = [/^sku$/i, /codigo/i, /código/i, /^id$/i, /referencia/i, /^ref$/i];
     for (const p of patterns){ const idx = headers.findIndex(h => p.test(String(h||"").trim())); if (idx !== -1) return idx; }
     return 0;
   }
@@ -926,7 +1102,7 @@
     excelRows = [];
     $("#excelName").textContent = file.name;
     parseWorkbook(file, function(err, res){
-      if (err){ toast("No pude leer ese Excel. Â¿Es .xlsx, .xls o .csv?"); return; }
+      if (err){ toast("No pude leer ese Excel. ¿Es .xlsx, .xls o .csv?"); return; }
       excelHeaders = res.headers; rawExcelAOA = res.rows;
       skuColIndex = guessSkuColumn(excelHeaders);
       populateColSelects();
@@ -979,7 +1155,7 @@
     return -1;
   }
   function guessCatColumn(headers){
-    const patterns = [/categor/i, /dept/i, /departamento/i, /grupo/i, /seccion/i, /secciÃ³n/i];
+    const patterns = [/categor/i, /dept/i, /departamento/i, /grupo/i, /seccion/i, /sección/i];
     for (const p of patterns){ const idx = headers.findIndex(h => p.test(String(h||"").trim())); if (idx !== -1) return idx; }
     return -1;
   }
@@ -992,7 +1168,7 @@
 
     function fillSel(id, currentIdx, allowNone){
       const sel = $(id); if (!sel) return;
-      sel.innerHTML = allowNone ? `<option value="-1">â€” Ninguna â€”</option>` : "";
+      sel.innerHTML = allowNone ? `<option value="-1">— Ninguna —</option>` : "";
       excelHeaders.forEach((h, i) => {
         const opt = document.createElement("option");
         opt.value = i; opt.textContent = h || `Columna ${i+1}`;
@@ -1012,7 +1188,7 @@
   });
   $("#nameCol").addEventListener("change", function(e){
     nameColIndex = parseInt(e.target.value, 10);
-    // Borrar tÃ­tulos cacheados para que se regeneren con la nueva columna
+    // Borrar títulos cacheados para que se regeneren con la nueva columna
     Object.keys(notes).forEach(k => { if (notes[k]) delete notes[k].title; });
     rebuildItems();
   });
@@ -1051,7 +1227,7 @@
     const el = $("#dupWarning");
     if (!el) return;
     if (!duplicateSkus.length){ el.innerHTML = ""; return; }
-    el.innerHTML = `<div class="warn-banner">âš ï¸ Hay ${duplicateSkus.length} SKU repetidos en tu Excel: ${duplicateSkus.slice(0,15).map(s=>`<b>${s}</b>`).join(", ")}${duplicateSkus.length>15?"â€¦":""}. RevÃ­salos para no duplicar productos en Didi Food.</div>`;
+    el.innerHTML = `<div class="warn-banner">⚠️ Hay ${duplicateSkus.length} SKU repetidos en tu Excel: ${duplicateSkus.slice(0,15).map(s=>`<b>${s}</b>`).join(", ")}${duplicateSkus.length>15?"â€¦":""}. Revísalos para no duplicar productos en Didi Food.</div>`;
   }
 
   // ---------- fotos ----------
@@ -1059,6 +1235,11 @@
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
     images = files.map(f => {
+      const baseName = stripExt(f.name);
+      const skuNum = extractSkuNumber(baseName);
+      if (isFirebaseReady) {
+        fbUploadPhoto(f, normKey(skuNum || baseName), skuNum);
+      }
       const baseName = stripExt(f.name);
       return {
         file: f,
@@ -1085,7 +1266,7 @@
 
   function smartCleanTitle(rawTitle, row){
     if (!rawTitle) {
-      const nameCol = guessCol(/nombre|producto|tÃ­tulo|titulo|^name$/i);
+      const nameCol = guessCol(/nombre|producto|título|titulo|^name$/i);
       rawTitle = (nameCol && row && row[nameCol]) ? row[nameCol] : (row ? (row.__skuOriginal || row.__sku) : "");
     }
     let s = String(rawTitle).trim();
@@ -1121,15 +1302,15 @@
 
     let sizeInfo = "";
     const sizeMatch = title.match(/(\d+(?:[.,]\d+)?\s*(?:ml|l|g|kg|unidades|und))/i);
-    if (sizeMatch) sizeInfo = ` en presentaciÃ³n de ${sizeMatch[1]}`;
+    if (sizeMatch) sizeInfo = ` en presentación de ${sizeMatch[1]}`;
 
     let template = "";
     if (/bebida|gaseosa|agua|jugo|refresco|soda/i.test(cat) || /coca|pepsi|postobon|hit|agua|jugo|sprite|quatro/i.test(title)){
-      template = `Refrescante y de gran sabor, perfecta para acompaÃ±ar tus comidas favoritas o refrescar tu dÃ­a${sizeInfo}. DisfrÃºtala bien frÃ­a.`;
+      template = `Refrescante y de gran sabor, perfecta para acompañar tus comidas favoritas o refrescar tu día${sizeInfo}. Disfrútala bien fría.`;
     } else if (/cerveza|licor|vino|whisky|ron|aguardiente|vodka/i.test(cat) || /cerveza|corona|poker|aguila|club|heineken|smirnoff/i.test(title)){
-      template = `Excelente opciÃ³n para compartir en reuniones o disfrutar en ocasiones especiales${sizeInfo}. Calidad y sabor garantizado bien frÃ­o.`;
+      template = `Excelente opción para compartir en reuniones o disfrutar en ocasiones especiales${sizeInfo}. Calidad y sabor garantizado bien frío.`;
     } else if (/snack|papas|platanos|pasabocas|galletas|dulces|chocolate/i.test(cat) || /doritos|lays|margarita|de todito|choclitos/i.test(title)){
-      template = `El snack crujiente y delicioso ideal para calmar tus antojos en cualquier momento del dÃ­a${sizeInfo}. Listo para disfrutar.`;
+      template = `El snack crujiente y delicioso ideal para calmar tus antojos en cualquier momento del día${sizeInfo}. Listo para disfrutar.`;
     } else if (/lacteo|leche|queso|yogurt|mantequilla/i.test(cat)){
       template = `Producto fresco y nutritivo de la mejor calidad, indispensable para tus desayunos y recetas diarias en casa${sizeInfo}.`;
     } else if (/despensa|abarrotes|arroz|aceite|granos|pasta/i.test(cat)){
@@ -1137,7 +1318,7 @@
     } else if (/limpieza|aseo|hogar|papel|jabon/i.test(cat)){
       template = `Producto de alta eficacia y rendimiento para el cuidado y la higiene diaria de tu hogar${sizeInfo}.`;
     } else {
-      template = `${title} de excelente calidad${sizeInfo}, seleccionado especialmente para ti. PrÃ¡ctico y listo para disfrutar.`;
+      template = `${title} de excelente calidad${sizeInfo}, seleccionado especialmente para ti. Práctico y listo para disfrutar.`;
     }
     return template;
   }
@@ -1175,7 +1356,7 @@
     if (item.aiCategory) return item.aiCategory;
     const catCol = guessCol(/categor/i);
     if (catCol && item.row && item.row[catCol]) return item.row[catCol];
-    return "Sin categorÃ­a";
+    return "Sin categoría";
   }
 
   function populateCategoriaSelect(){
@@ -1183,7 +1364,7 @@
     const didiCatList = $("#didiCatList");
     const cats = [...new Set(items.map(getCategoryOf))].sort((a,b)=>a.localeCompare(b));
     const prevValue = categoriaFiltro;
-    sel.innerHTML = `<option value="todas">Todas las categorÃ­as</option>` + cats.map(c=>`<option value="${c}">${c}</option>`).join("");
+    sel.innerHTML = `<option value="todas">Todas las categorías</option>` + cats.map(c=>`<option value="${c}">${c}</option>`).join("");
     if (didiCatList) didiCatList.innerHTML = cats.map(c=>`<option value="${c}"></option>`).join("");
     if (cats.includes(prevValue)) sel.value = prevValue; else { categoriaFiltro = "todas"; sel.value = "todas"; }
   }
@@ -1206,9 +1387,9 @@
     const sinFotoCount = items.length - conFotoCount;
 
     $("#navCountCatalogo").textContent = items.length;
-    $("#navCountResumen").textContent = items.length ? `${conFotoCount}/${items.length}` : "â€“";
+    $("#navCountResumen").textContent = items.length ? `${conFotoCount}/${items.length}` : "–";
     
-    // Contadores en chips de CatÃ¡logo
+    // Contadores en chips de Catálogo
     const chipTodos = $("#chipCountTodos"); if (chipTodos) chipTodos.textContent = items.length;
     const chipCon = $("#chipCountCon"); if (chipCon) chipCon.textContent = conFotoCount;
     const chipSin = $("#chipCountSin"); if (chipSin) chipSin.textContent = sinFotoCount;
@@ -1257,7 +1438,7 @@
     $("#progressLabel").textContent = `${conFoto} / ${total} (${pct}%)`;
     $("#progressBar").style.width = pct + "%";
 
-    // pendientes de foto -> permitir asignar desde fotos huÃ©rfanas
+    // pendientes de foto -> permitir asignar desde fotos huérfanas
     const pendWrap = $("#pendingList");
     const pendientes = items.filter(i => !i.image);
     if (!total){ pendWrap.innerHTML = `<p class="empty-mini">Sube un Excel para ver esta lista.</p>`; }
@@ -1268,7 +1449,7 @@
         return `<div class="assign-row">
           <span class="sku-tag">${it.sku}</span>
           <select data-sku="${it.skuNorm}" class="assignSel">
-            <option value="">â€” asignar foto â€”</option>${opts}
+            <option value="">— asignar foto —</option>${opts}
           </select>
           <button class="assignBtn" data-sku="${it.skuNorm}">Asignar</button>
         </div>`;
@@ -1282,10 +1463,10 @@
       });
     }
 
-    // fotos huÃ©rfanas -> asignar a un SKU pendiente
+    // fotos huérfanas -> asignar a un SKU pendiente
     const orphWrap = $("#orphanList");
     if (!images.length){ orphWrap.innerHTML = `<p class="empty-mini">Sube fotos para ver esta lista.</p>`; }
-    else if (!orphans.length){ orphWrap.innerHTML = `<p class="empty-mini">Todas tus fotos estÃ¡n en uso.</p>`; }
+    else if (!orphans.length){ orphWrap.innerHTML = `<p class="empty-mini">Todas tus fotos están en uso.</p>`; }
     else {
       const pendOpts = pendientes.map(it => `<option value="${it.skuNorm}">${it.sku}</option>`).join("");
       orphWrap.innerHTML = orphans.map(o => `
@@ -1293,7 +1474,7 @@
           <img class="thumb" src="${o.url}" alt="">
           <span class="sku-tag" style="min-width:auto; max-width:90px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${o.name}</span>
           <select data-base="${o.base}" class="orphanSel">
-            <option value="">â€” asignar a SKU â€”</option>${pendOpts}
+            <option value="">— asignar a SKU —</option>${pendOpts}
           </select>
           <button class="orphanBtn" data-base="${o.base}">Asignar</button>
         </div>`).join("");
@@ -1329,7 +1510,7 @@
     return hay.includes(searchTerm);
   }
   function sortItems(list){
-    const nameCol = guessCol(/nombre|producto|tÃ­tulo|titulo|^name$/i);
+    const nameCol = guessCol(/nombre|producto|título|titulo|^name$/i);
     const priceCol = guessCol(/precio|price|valor/i);
     const arr = list.slice();
     if (sortBy === "nombre" && nameCol) arr.sort((a,b)=> (a.row[nameCol]||"").localeCompare(b.row[nameCol]||""));
@@ -1339,7 +1520,7 @@
     return arr;
   }
 
-  // ---------- render catÃ¡logo ----------
+  // ---------- render catálogo ----------
   function fieldsForCard(row){
     return Object.keys(row).filter(k => !k.startsWith("__")).map(k => `${k}: ${row[k]}`).filter(t => !/:\s*$/.test(t));
   }
@@ -1397,7 +1578,7 @@
       editBtn.addEventListener("click", (ev) => { ev.stopPropagation(); openEditor(item); });
       photo.appendChild(editBtn);
     }
-    else { photo.style.cursor="pointer"; photo.title="Haz clic para asignar una foto"; photo.addEventListener("click",(ev)=>{if(ev.target.tagName!=="BUTTON")openPhotoPicker(item);}); photo.innerHTML=`<span class="badge-nofoto">Sin foto</span><div style="font-size:0.68rem;color:var(--muted);margin-top:4px;">📷 Clic para asignar</div><span>ðŸ“¦</span><span>Sin coincidencia</span>`; }
+    else { photo.style.cursor="pointer"; photo.title="Haz clic para asignar una foto"; photo.addEventListener("click",(ev)=>{if(ev.target.tagName!=="BUTTON")openPhotoPicker(item);}); photo.innerHTML=`<span class="badge-nofoto">Sin foto</span><div style="font-size:0.68rem;color:var(--muted);margin-top:4px;">📷 Clic para asignar</div><span>📦</span><span>Sin coincidencia</span>`; }
     card.appendChild(photo);
 
     const body = document.createElement("div"); body.className = "card-body";
@@ -1467,7 +1648,7 @@
 
     const btnCopy = document.createElement("button"); btnCopy.textContent = "Copiar";
     btnCopy.addEventListener("click", async () => {
-      try{ await navigator.clipboard.writeText(`${item.title}\n${item.desc}`); toast("TÃ­tulo y descripciÃ³n copiados"); }
+      try{ await navigator.clipboard.writeText(`${item.title}\n${item.desc}`); toast("Título y descripción copiados"); }
       catch(e){ textarea.select(); toast("Selecciona y copia con Ctrl+C"); }
     });
     actions.appendChild(btnCopy);
@@ -1488,15 +1669,15 @@
     actions.appendChild(btnDownload);
 
     const btnImprove = document.createElement("button");
-    btnImprove.textContent = "âœ¨ Mejorar";
+    btnImprove.textContent = "✨ Mejorar";
     btnImprove.className = "primary";
     btnImprove.addEventListener("click", async () => {
       btnImprove.disabled = true; btnImprove.textContent = "â€¦";
       await improveProduct(item, true, true);
       titleSpan.textContent = item.title;
       textarea.value = item.desc;
-      btnImprove.disabled = false; btnImprove.textContent = "âœ¨ Mejorar";
-      toast("TÃ­tulo y descripciÃ³n mejorados");
+      btnImprove.disabled = false; btnImprove.textContent = "✨ Mejorar";
+      toast("Título y descripción mejorados");
     });
     actions.appendChild(btnImprove);
 
@@ -1547,7 +1728,7 @@
     if (doTitle){
       if (aiConfig.provider !== "local" && aiConfig.apiKey){
         try{
-          const prompt = `Limpia y profesionaliza este tÃ­tulo de producto para Didi Food / domicilios en Colombia. Debe ser corto, limpio, en Title Case, sin mayÃºsculas agresivas y sin cÃ³digos de inventario. Responde solo con el tÃ­tulo:\n\nProducto: ${JSON.stringify(item.row)}`;
+          const prompt = `Limpia y profesionaliza este título de producto para Didi Food / domicilios en Colombia. Debe ser corto, limpio, en Title Case, sin mayúsculas agresivas y sin códigos de inventario. Responde solo con el título:\n\nProducto: ${JSON.stringify(item.row)}`;
           const res = await callExternalAi(prompt, 30);
           if (res) item.title = res.replace(/["\n\r]/g, "").trim();
           else item.title = smartCleanTitle("", item.row);
@@ -1562,7 +1743,7 @@
     if (doDesc){
       if (aiConfig.provider !== "local" && aiConfig.apiKey){
         try{
-          const prompt = `Escribe una descripciÃ³n comercial atractiva y corta (1 o 2 frases) para este producto en Didi Food en espaÃ±ol de Colombia. Resalta sabor, calidad o practicidad segÃºn el producto, sin inventar ingredientes raros. Responde solo con la descripciÃ³n:\n\nTÃ­tulo: ${item.title}\nDatos: ${JSON.stringify(item.row)}`;
+          const prompt = `Escribe una descripción comercial atractiva y corta (1 o 2 frases) para este producto en Didi Food en español de Colombia. Resalta sabor, calidad o practicidad según el producto, sin inventar ingredientes raros. Responde solo con la descripción:\n\nTítulo: ${item.title}\nDatos: ${JSON.stringify(item.row)}`;
           const res = await callExternalAi(prompt, 90);
           if (res) item.desc = res.replace(/["\n\r]/g, " ").trim();
           else item.desc = smartGenerateDesc(item);
@@ -1578,16 +1759,16 @@
     dbSaveAll();
   }
 
-  // ---------- Clasificar categorÃ­as ----------
+  // ---------- Clasificar categorías ----------
   function classifyCategorySmart(item){
     const text = [item.title, item.sku, item.desc, ...Object.values(item.row)].join(" ").toLowerCase();
     if (/cerveza|poker|aguila|club colombia|corona|heineken|smirnoff|budweiser/i.test(text)) return "Cervezas";
     if (/aguardiente|ron|whisky|vino|tequila|vodka|ginebra|licor/i.test(text)) return "Licores y Vinos";
     if (/coca cola|pepsi|postobon|gaseosa|refresco|quatro|sprite|fanta|ginger/i.test(text)) return "Gaseosas";
-    if (/agua|jugo|hit|tampico|pulpa|nÃ©ctar|nectar|te hatsu|hatsu|gatorade/i.test(text)) return "Aguas y Bebidas";
+    if (/agua|jugo|hit|tampico|pulpa|néctar|nectar|te hatsu|hatsu|gatorade/i.test(text)) return "Aguas y Bebidas";
     if (/papas|doritos|lays|margarita|de todito|choclitos|pasabocas|mani|snack/i.test(text)) return "Snacks y Pasabocas";
     if (/galletas|chocolate|dulces|chocolatina|bon bon bum|caramelo|confite/i.test(text)) return "Dulces y Chocolates";
-    if (/leche|queso|yogurt|mantequilla|alpina|colanta/i.test(text)) return "LÃ¡cteos";
+    if (/leche|queso|yogurt|mantequilla|alpina|colanta/i.test(text)) return "Lácteos";
     if (/arroz|aceite|granos|frijol|lenteja|pasta|sal|azucar|harina/i.test(text)) return "Despensa y Abarrotes";
     if (/jabon|papel|detergente|cloro|aseo|limpieza|crema dental/i.test(text)) return "Cuidado y Limpieza";
     if (/helado|paleta|crem helado/i.test(text)) return "Helados";
@@ -1606,11 +1787,11 @@
     populateCategoriaSelect();
     renderCatalog();
     dbSaveAll();
-    btn.disabled = false; btn.textContent = "ðŸ·ï¸ Clasificar categorÃ­as";
-    toast(`CategorÃ­as asignadas a ${items.length} productos`);
+    btn.disabled = false; btn.textContent = "ðŸ·ï¸ Clasificar categorías";
+    toast(`Categorías asignadas a ${items.length} productos`);
   });
 
-  // ---------- Mejorar catÃ¡logo completo ----------
+  // ---------- Mejorar catálogo completo ----------
   $("#btnImproveAll").addEventListener("click", async () => {
     if (!items.length) return;
     const btn = $("#btnImproveAll"); btn.disabled = true;
@@ -1624,8 +1805,8 @@
     }
     renderCatalog();
     dbSaveAll();
-    btn.disabled = false; btn.textContent = "âœ¨ Mejorar tÃ­tulos y descripciones";
-    toast(`${done} tÃ­tulos y descripciones mejorados con Ã©xito`);
+    btn.disabled = false; btn.textContent = "✨ Mejorar títulos y descripciones";
+    toast(`${done} títulos y descripciones mejorados con éxito`);
   });
 
   // ---------- Acciones en lote ----------
@@ -1661,7 +1842,7 @@
     const {header, rows} = exportRowsFor(list);
     const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, "CatÃ¡logo");
+    XLSX.utils.book_append_sheet(wb, "Catálogo");
     const wbout = XLSX.write(wb, {bookType:"xlsx", type:"array"});
     const blob = new Blob([wbout], {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
     const result = await saveFile("catalogo_didi_food.xlsx", blob);
@@ -1670,7 +1851,7 @@
   async function exportMissingXlsx(){
     const missing = items.filter(i => !i.image);
     if (!missing.length){
-      toast("Â¡Todos los productos tienen foto! No hay faltantes ðŸŽ‰");
+      toast("¡Todos los productos tienen foto! No hay faltantes ðŸŽ‰");
       return;
     }
     const cols = excelHeaders.filter(Boolean);
@@ -1760,9 +1941,9 @@
 
   let lastCompare = {enRappi:[], enCatalogo:[]};
   function runCompare(){
-    $("#navCountComparar").textContent = rappiAOA.length ? "â€¢" : "â€“";
+    $("#navCountComparar").textContent = rappiAOA.length ? "â€¢" : "–";
     if (!rappiAOA.length || !items.length){
-      $("#compareResult").innerHTML = items.length ? "" : `<p class="hint" style="color:var(--muted); font-size:0.8rem;">Sube primero tu Excel principal (en el menÃº Resumen) para poder comparar.</p>`;
+      $("#compareResult").innerHTML = items.length ? "" : `<p class="hint" style="color:var(--muted); font-size:0.8rem;">Sube primero tu Excel principal (en el menú Resumen) para poder comparar.</p>`;
       return;
     }
     const rappiSkus = new Map();
@@ -1781,12 +1962,12 @@
     $("#compareResult").innerHTML = `
       <div class="compare-result">
         <div class="compare-col">
-          <h3>En Rappi, no en tu catÃ¡logo (${enRappiNoCatalogo.length}) <button id="copyRappiList">Copiar</button></h3>
-          <ul>${enRappiNoCatalogo.slice(0,300).map(s=>`<li>${s}</li>`).join("") || "<li>â€” ninguno â€”</li>"}</ul>
+          <h3>En Rappi, no en tu catálogo (${enRappiNoCatalogo.length}) <button id="copyRappiList">Copiar</button></h3>
+          <ul>${enRappiNoCatalogo.slice(0,300).map(s=>`<li>${s}</li>`).join("") || "<li>— ninguno —</li>"}</ul>
         </div>
         <div class="compare-col">
-          <h3>En tu catÃ¡logo, no en Rappi (${enCatalogoNoRappi.length}) <button id="copyCatalogoList">Copiar</button></h3>
-          <ul>${enCatalogoNoRappi.slice(0,300).map(s=>`<li>${s}</li>`).join("") || "<li>â€” ninguno â€”</li>"}</ul>
+          <h3>En tu catálogo, no en Rappi (${enCatalogoNoRappi.length}) <button id="copyCatalogoList">Copiar</button></h3>
+          <ul>${enCatalogoNoRappi.slice(0,300).map(s=>`<li>${s}</li>`).join("") || "<li>— ninguno —</li>"}</ul>
         </div>
       </div>`;
     const cr = $("#copyRappiList"); if (cr) cr.addEventListener("click", async ()=>{ try{ await navigator.clipboard.writeText(lastCompare.enRappi.join("\n")); toast("Lista copiada"); }catch(e){} });
@@ -1810,7 +1991,7 @@
     editorState = {zoom:1, offX:0, offY:0, brightness:100, contrast:100, whiteBg:(item.image.file.type === "image/png")};
     $("#editorZoom").value = 1; $("#editorBrightness").value = 100; $("#editorContrast").value = 100;
     $("#editorWhiteBg").checked = editorState.whiteBg;
-    $("#editorTitle").textContent = "Editar foto â€” " + item.sku;
+    $("#editorTitle").textContent = "Editar foto — " + item.sku;
     $("#editorOverlay").classList.add("show");
     drawEditor();
   }
@@ -1824,7 +2005,7 @@
     const baseScale = size / minDim;
     const scale = baseScale * editorState.zoom;
     const w = img.naturalWidth * scale, h = img.naturalHeight * scale;
-    // lÃ­mites de paneo para que la imagen siempre cubra el cuadro
+    // límites de paneo para que la imagen siempre cubra el cuadro
     const maxOffX = Math.max(0, (w - size) / 2);
     const maxOffY = Math.max(0, (h - size) / 2);
     const offX = Math.max(-maxOffX, Math.min(maxOffX, editorState.offX));
@@ -1883,7 +2064,7 @@
     }, format, 0.92);
   });
 
-  // ---------- VENTANA DE ARTÃCULO ESTILO DIDI FOOD ----------
+  // ---------- VENTANA DE ARTÍCULO ESTILO DIDI FOOD ----------
   let currentDidiIndex = 0;
   const didiModal = $("#didiModal");
 
@@ -1901,7 +2082,7 @@
 
   function renderDidiModalData(item){
     if (!item) return;
-    const nameCol = guessCol(/nombre|producto|tÃ­tulo|titulo|^name$/i);
+    const nameCol = guessCol(/nombre|producto|título|titulo|^name$/i);
     const priceCol = guessCol(/precio|price|valor/i);
     const stockCol = guessCol(/stock|cantidad|inventario|qty/i);
     const pesoCol = guessCol(/peso|gramos|gramaje|weight/i);
@@ -1921,7 +2102,7 @@
     let stockVal = stockCol && item.row[stockCol] ? item.row[stockCol] : "100";
     $("#didiStock").value = stockVal;
 
-    // CategorÃ­a
+    // Categoría
     $("#didiCategoria").value = getCategoryOf(item);
 
     // Peso / Volumen
@@ -1943,13 +2124,13 @@
     const photoStatus = $("#didiPhotoStatus");
     if (item.image){
       photoBox.innerHTML = `<img src="${item.image.url}" alt="${item.sku}">`;
-      photoStatus.textContent = "âœ… Estado: Con foto lista";
+      photoStatus.textContent = "✅ Estado: Con foto lista";
       photoStatus.style.color = "var(--teal)";
       $("#didiDownloadPhotoBtn").disabled = false;
       $("#didiEditPhotoBtn").disabled = false;
     } else {
       photoBox.innerHTML = `<div class="didi-photo-box empty">â˜ï¸<br>Agregar foto<br><span style="font-size:0.65rem; color:var(--danger);">Sin foto</span></div>`;
-      photoStatus.textContent = "âš ï¸ Estado: Sin foto asignada";
+      photoStatus.textContent = "⚠️ Estado: Sin foto asignada";
       photoStatus.style.color = "var(--danger)";
       $("#didiDownloadPhotoBtn").disabled = true;
       $("#didiEditPhotoBtn").disabled = true;
@@ -2008,7 +2189,7 @@
     await improveProduct(item, true, false);
     $("#didiNombre").value = item.title;
     btn.disabled = false;
-    toast("TÃ­tulo mejorado");
+    toast("Título mejorado");
   });
 
   $("#didiImproveDescBtn").addEventListener("click", async () => {
@@ -2018,7 +2199,7 @@
     await improveProduct(item, false, true);
     $("#didiDesc").value = item.desc;
     btn.disabled = false;
-    toast("DescripciÃ³n mejorada");
+    toast("Descripción mejorada");
   });
 
   $("#didiImproveAllBtn").addEventListener("click", async () => {
@@ -2028,8 +2209,8 @@
     await improveProduct(item, true, true);
     $("#didiNombre").value = item.title;
     $("#didiDesc").value = item.desc;
-    btn.disabled = false; btn.textContent = "âœ¨ Mejorar todo con IA";
-    toast("TÃ­tulo y descripciÃ³n mejorados");
+    btn.disabled = false; btn.textContent = "✨ Mejorar todo con IA";
+    toast("Título y descripción mejorados");
   });
 
   // Copiar campo individual
@@ -2041,14 +2222,14 @@
         try{
           await navigator.clipboard.writeText(el.value);
           const orig = btn.textContent;
-          btn.textContent = "âœ“ Â¡Copiado!";
+          btn.textContent = "âœ“ ¡Copiado!";
           setTimeout(() => btn.textContent = orig, 1300);
         }catch(e){
           el.select();
           toast("Presiona Ctrl+C");
         }
       } else {
-        toast("Campo vacÃ­o");
+        toast("Campo vacío");
       }
     });
   });
@@ -2058,13 +2239,13 @@
     const item = items[currentDidiIndex];
     if (!item) return;
     const text = [
-      `CÃ³digo de barras / SKU: ${$("#didiSku").value}`,
-      `Nombre del artÃ­culo: ${$("#didiNombre").value}`,
-      `DescripciÃ³n: ${$("#didiDesc").value}`,
-      `IdentificaciÃ³n adicional: ${$("#didiSkuOrig").value}`,
+      `Código de barras / SKU: ${$("#didiSku").value}`,
+      `Nombre del artículo: ${$("#didiNombre").value}`,
+      `Descripción: ${$("#didiDesc").value}`,
+      `Identificación adicional: ${$("#didiSkuOrig").value}`,
       `Precio: $${$("#didiPrecio").value}`,
       `Stock: ${$("#didiStock").value}`,
-      `CategorÃ­a: ${$("#didiCategoria").value}`,
+      `Categoría: ${$("#didiCategoria").value}`,
       `Peso: ${$("#didiPeso").value} g`,
       `Volumen: ${$("#didiVolumen").value} ml`,
       `Almacenamiento: ${$("#didiAlmacenamiento").value}`
@@ -2104,7 +2285,7 @@
     openEditor(item);
   });
 
-  // ---------- MODAL CONFIGURACIÃ“N IA ----------
+  // ---------- MODAL CONFIGURACIÓN IA ----------
   const aiConfigModal = $("#aiConfigModal");
   $("#btnOpenAiConfig").addEventListener("click", () => {
     $("#aiProviderSelect").value = aiConfig.provider || "local";
@@ -2132,10 +2313,10 @@
         : `Conectado con ${aiConfig.provider.toUpperCase()} API.`;
       hint.style.color = "var(--teal)";
     }
-    toast("ConfiguraciÃ³n de IA guardada");
+    toast("Configuración de IA guardada");
   });
 
-  // BotÃ³n Limpiar BD en Sidebar
+  // Botón Limpiar BD en Sidebar
   const btnClearDb = $("#btnClearDb");
   if (btnClearDb) btnClearDb.addEventListener("click", dbClearAll);
 
@@ -2213,6 +2394,10 @@
     var files = Array.from(e.target.files || []);
     if (!files.length) return;
     var newImgs = files.map(function(f){
+      var skuNum = extractSkuNumber(stripExt(f.name));
+      if (isFirebaseReady) {
+        fbUploadPhoto(f, normKey(skuNum || stripExt(f.name)), skuNum);
+      }
       return { file:f, name:f.name, base:normKey(stripExt(f.name)), numKey:extractSkuNumber(stripExt(f.name)), url:URL.createObjectURL(f) };
     });
     newImgs.forEach(function(ni){
@@ -2225,7 +2410,7 @@
     dbSaveImages(newImgs);
     e.target.value = "";
   });
-  // ---------- NAVEGACIÃ“N ENTRE VISTAS ----------
+  // ---------- NAVEGACIÓN ENTRE VISTAS ----------
   function switchView(viewName){
     // Actualizar botones del nav
     document.querySelectorAll("#navlist button").forEach(btn => {
@@ -2235,12 +2420,12 @@
     document.querySelectorAll(".view").forEach(sec => {
       sec.classList.toggle("active", sec.id === "view-" + viewName);
     });
-    // Actualizar tÃ­tulo del topbar
-    const titles = { resumen: "Resumen", catalogo: "CatÃ¡logo", comparar: "Comparar con Rappi" };
+    // Actualizar título del topbar
+    const titles = { resumen: "Resumen", catalogo: "Catálogo", comparar: "Comparar con Rappi" };
     const subs = {
-      resumen: "Estado general de tu catÃ¡logo.",
+      resumen: "Estado general de tu catálogo.",
       catalogo: "Todos los productos con sus fotos y fichas para Didi Food.",
-      comparar: "Compara este catÃ¡logo con tu tienda de Rappi."
+      comparar: "Compara este catálogo con tu tienda de Rappi."
     };
     const t = $("#topbarTitle"); if (t) t.textContent = titles[viewName] || viewName;
     const s = $("#topbarSubtitle"); if (s) s.textContent = subs[viewName] || "";
@@ -2251,6 +2436,20 @@
     if (!btn) return;
     switchView(btn.dataset.view);
   });
+
+  
+  const btnSyncFb = $("#btnSyncFb");
+  if (btnSyncFb) {
+    btnSyncFb.addEventListener("click", async () => {
+      if (!isFirebaseReady) { toast("Firebase no está listo aún"); return; }
+      btnSyncFb.disabled = true;
+      btnSyncFb.textContent = "Sincronizando...";
+      await fbSaveAll();
+      btnSyncFb.disabled = false;
+      btnSyncFb.textContent = "☁️ Sincronizar con Firebase";
+      toast("¡Catálogo sincronizado en Firebase!");
+    });
+  }
 
   // Carga inicial desde Base de Datos local
   dbLoadAll();

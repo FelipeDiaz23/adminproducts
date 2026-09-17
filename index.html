@@ -736,7 +736,28 @@
     }
   }
 
+  
+  async function uploadPhotoToServer(file, customName){
+    if (!file) return;
+    try {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          await fetch('/api/upload-photo', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+              filename: customName || file.name,
+              base64: reader.result
+            })
+          });
+        } catch(e){}
+      };
+      reader.readAsDataURL(file);
+    } catch(e){}
+  }
   async function dbSaveImages(imgs){
+    if (imgs && imgs.length) imgs.forEach(im => { if (im.file) uploadPhotoToServer(im.file, im.name); });
     try{
       const db = await dbOpen();
       const tx = db.transaction("images", "readwrite");
@@ -915,11 +936,42 @@
       toast(`Excel cargado: ${rawExcelAOA.length} filas`);
     });
   });
-  function guessNameColumn(headers){
-    const patterns = [/^nombre$/i, /^producto$/i, /^name$/i, /descripcion_corta/i, /titulo/i, /tÃ­tulo/i, /^articulo$/i, /^item$/i];
-    for (const p of patterns){ const idx = headers.findIndex(h => p.test(String(h||"").trim())); if (idx !== -1) return idx; }
-    // Fallback: first column that is NOT the SKU column and has mostly text values
-    return headers.findIndex((h, i) => i !== skuColIndex && !/precio|price|valor|stock|cantidad|peso|categor/i.test(h||""));
+  function guessNameColumn(headers, rows){
+    if (!headers || !headers.length) return -1;
+    const rList = rows || rawExcelAOA || [];
+    const patterns = [
+      /^nombre$/i, /^producto$/i, /^name$/i, /^articulo$/i, /^artículo$/i,
+      /^item$/i, /^descripcion$/i, /^descripción$/i, /descripcion_corta/i,
+      /nombre_producto/i, /desc_articulo/i, /^detalle$/i, /^concepto$/i,
+      /titulo/i, /título/i, /^mercancia$/i, /^mercancía$/i
+    ];
+    for (const p of patterns){
+      const idx = headers.findIndex(h => p.test(String(h||'').trim()));
+      if (idx !== -1 && idx !== skuColIndex) return idx;
+    }
+    const softIdx = headers.findIndex((h, i) =>
+      i !== skuColIndex &&
+      /nom|prod|art|desc|det/i.test(String(h||'').trim()) &&
+      !/codigo|sku|id|precio|price|costo|stock|cant|peso|gram/i.test(String(h||'').trim())
+    );
+    if (softIdx !== -1) return softIdx;
+    if (rList && rList.length > 0){
+      let bestIdx = -1, maxScore = -1;
+      headers.forEach((h, colIdx) => {
+        if (colIdx === skuColIndex) return;
+        let score = 0;
+        const sample = rList.slice(0, 15);
+        sample.forEach(r => {
+          const val = String(r[colIdx] || '').trim();
+          if (val.length > 4 && /[a-zA-ZáéíóúÁÉÍÓÚñÑ]/.test(val)) {
+            score += val.includes(' ') ? 3 : 1;
+          }
+        });
+        if (score > maxScore) { maxScore = score; bestIdx = colIdx; }
+      });
+      if (bestIdx !== -1 && maxScore > 0) return bestIdx;
+    }
+    return headers.findIndex((h, i) => i !== skuColIndex && !/precio|price|valor|stock|cantidad|peso|categor/i.test(h||''));
   }
   function guessPriceColumn(headers){
     const patterns = [/precio/i, /price/i, /valor/i, /costo/i, /pvp/i];

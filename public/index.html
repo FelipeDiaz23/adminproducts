@@ -703,6 +703,19 @@
     try {
       console.log("🔥 Guardando en Firebase Firestore:", items.length, "productos...");
       const cleanHeaders = (excelHeaders || []).map(h => String(h || "").trim());
+
+      // Guardamos el Excel crudo completo (rawExcelAOA) partido en trozos, para
+      // que la app siempre pueda reconstruir el catálogo completo desde acá,
+      // sin depender de reconstruirlo producto por producto. Un solo documento
+      // de Firestore no puede pasar de ~1MB, así que lo partimos.
+      const rawJson = JSON.stringify(rawExcelAOA || []);
+      const CHUNK_CHARS = 700000;
+      const rawChunks = [];
+      for (let i = 0; i < rawJson.length; i += CHUNK_CHARS) {
+        rawChunks.push(rawJson.slice(i, i + CHUNK_CHARS));
+      }
+      if (rawChunks.length === 0) rawChunks.push("[]");
+
       await fbDb.collection("catalog").doc("meta").set({
         excelHeaders: cleanHeaders,
         skuColIndex: skuColIndex >= 0 ? skuColIndex : 0,
@@ -711,8 +724,24 @@
         catColIndex: catColIndex !== undefined ? catColIndex : -1,
         notes: sanitizeForFirestore(notes || {}),
         itemCount: items.length,
+        rawChunkCount: rawChunks.length,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       }, { merge: true });
+
+      // Sube cada trozo del Excel crudo a su propio documento
+      for (let i = 0; i < rawChunks.length; i++) {
+        await fbDb.collection("catalogRaw").doc("chunk_" + i).set({ data: rawChunks[i] });
+      }
+      // Si el catálogo se redujo (menos trozos que antes), borra los sobrantes
+      try {
+        const oldChunksSnap = await fbDb.collection("catalogRaw").get();
+        const deletions = [];
+        oldChunksSnap.forEach(doc => {
+          const n = parseInt(String(doc.id).replace("chunk_", ""), 10);
+          if (!isNaN(n) && n >= rawChunks.length) deletions.push(doc.ref.delete());
+        });
+        if (deletions.length) await Promise.all(deletions);
+      } catch(e) { console.warn("No se pudieron limpiar trozos viejos del excel:", e); }
 
       const BATCH_SIZE = 250;
       for (let i = 0; i < items.length; i += BATCH_SIZE) {
@@ -774,7 +803,6 @@
       if (!metaDoc.exists) return false;
       const meta = metaDoc.data();
       excelHeaders = meta.excelHeaders || [];
-      rawExcelAOA = meta.rawExcelAOA || [];
       skuColIndex = meta.skuColIndex !== undefined ? meta.skuColIndex : 0;
       nameColIndex = meta.nameColIndex !== undefined ? meta.nameColIndex : -1;
       priceColIndex = meta.priceColIndex !== undefined ? meta.priceColIndex : -1;
@@ -784,7 +812,25 @@
         saveNotes(notes);
       }
 
-      // Cargar productos de Firestore
+      // Fuente principal: el Excel crudo completo, guardado en trozos.
+      // Así el catálogo se reconstruye siempre igual, sin depender de que
+      // cada producto se haya guardado bien por separado.
+      rawExcelAOA = [];
+      const chunkCount = meta.rawChunkCount || 0;
+      if (chunkCount > 0) {
+        try {
+          const chunkDocs = await Promise.all(
+            Array.from({length: chunkCount}, (_, i) => fbDb.collection("catalogRaw").doc("chunk_" + i).get())
+          );
+          const rawJson = chunkDocs.map(d => (d.exists ? (d.data().data || "") : "")).join("");
+          rawExcelAOA = JSON.parse(rawJson || "[]");
+        } catch(e) {
+          console.warn("No se pudo reconstruir el excel crudo desde Firestore:", e);
+          rawExcelAOA = [];
+        }
+      }
+
+      // Cargar productos de Firestore (para fotos, notas y como respaldo si no hay excel crudo)
       const prodSnap = await fbDb.collection("products").get();
       if (prodSnap.empty && !rawExcelAOA.length) return false;
 
@@ -1122,9 +1168,11 @@
         try {
           await fbDb.collection("catalog").doc("meta").delete();
           const snap = await fbDb.collection("products").get();
+          const rawSnap = await fbDb.collection("catalogRaw").get();
           const CHUNK = 400;
           let batch = fbDb.batch(); let count = 0;
-          for (const doc of snap.docs) {
+          const allDocs = [...snap.docs, ...rawSnap.docs];
+          for (const doc of allDocs) {
             batch.delete(doc.ref); count++;
             if (count === CHUNK) { await batch.commit(); batch = fbDb.batch(); count = 0; }
           }

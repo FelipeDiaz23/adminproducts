@@ -237,7 +237,7 @@
       <p class="hint">El nombre del archivo (número) = SKU.</p>
       <label class="file-drop">
         <input type="file" id="photosInput" accept="image/*" multiple>
-        🖼️ Subir fotos
+        🖼️ Subir fotos
         <span class="fname" id="photosName"></span>
       </label>
     </div>
@@ -255,8 +255,8 @@
     <div class="side-block">
       <h3>✨ IA (Títulos y Descripciones)</h3>
       <button class="wide primary" id="btnImproveAll">✨ Mejorar títulos y descripciones</button>
-      <button class="wide" id="btnClassify">ðŸ·ï¸ Clasificar categorías</button>
-      <button class="wide" id="btnOpenAiConfig" style="font-size:0.72rem;">âš™ï¸ Configurar API Key (Opcional)</button>
+      <button class="wide" id="btnClassify">🏷️ Clasificar categorías</button>
+      <button class="wide" id="btnOpenAiConfig" style="font-size:0.72rem;">⚙️ Configurar API Key (Opcional)</button>
       <p class="hint" id="iaHint" style="color:var(--teal);">Listo para usar. Utiliza optimización inteligente local para Didi Food (o tu API Key de Gemini/OpenAI si la configuras).</p>
     </div>
 
@@ -264,7 +264,7 @@
       <h3>Exportar</h3>
       <button class="wide primary" id="btnExportCsv" disabled>CSV del catálogo</button>
       <button class="wide" id="btnExportXlsx" disabled>Excel (.xlsx) del catálogo</button>
-      <button class="wide danger" id="btnExportMissingSide" disabled>⚠️ Excel faltantes de foto (<span id="sideMissingCount">0</span>)</button>
+      <button class="wide danger" id="btnExportMissingSide" disabled>⚠️ Excel faltantes de foto (<span id="sideMissingCount">0</span>)</button>
       <button class="wide" id="btnExportZip" disabled>Fotos en .zip</button>
       <label class="toggle-line"><input type="checkbox" id="optimizeToggle" checked> Optimizar fotos (cuadradas, máx. 1080px) al descargar</label>
     </div>
@@ -303,7 +303,7 @@
           <div class="panel-box">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
               <h2 style="margin:0;">Pendientes de foto (<span id="boxMissingCount">0</span>)</h2>
-              <button class="danger" id="btnExportMissingBox" disabled style="font-size:0.75rem; padding:5px 10px;">ðŸ“¥ Exportar faltantes a Excel</button>
+              <button class="danger" id="btnExportMissingBox" disabled style="font-size:0.75rem; padding:5px 10px;">📥 Exportar faltantes a Excel</button>
             </div>
             <div id="pendingList"><p class="empty-mini">Sube un Excel para ver esta lista.</p></div>
           </div>
@@ -317,7 +317,7 @@
       <!-- CATALOGO -->
       <section class="view" id="view-catalogo">
         <div class="toolbar">
-          <input type="text" id="search" placeholder="Buscar por SKU, nombre, categoríaâ€¦">
+          <input type="text" id="search" placeholder="Buscar por SKU, nombre, categoría…">
           <div class="chip-row" id="filterChips">
             <span class="chip active" data-filter="todos">Todos (<b id="chipCountTodos">0</b>)</span>
             <span class="chip" data-filter="con">Con foto (<b id="chipCountCon">0</b>)</span>
@@ -360,7 +360,7 @@
           <p class="hint" style="color:var(--muted); font-size:0.8rem;">No puedo conectarme directamente a tu tienda Rappi desde aquí. Exporta el listado de SKUs desde tu panel de Rappi a Excel/CSV y lo comparo contra este catálogo.</p>
           <label class="file-drop" style="border-color:var(--border); color:var(--muted); background:var(--panel-2); max-width:320px;">
             <input type="file" id="rappiInput" accept=".xlsx,.xls,.csv">
-            ðŸ” Subir Excel de Rappi
+            🔁 Subir Excel de Rappi
             <span class="fname" id="rappiName"></span>
           </label>
           <div id="rappiColWrap" style="display:none; max-width:280px;">
@@ -382,13 +382,13 @@
   <div class="modal-box" style="max-width:700px; width:95vw;">
     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:8px;">
       <h2 style="margin:0; font-size:1rem;" id="photoPickerTitle">Asignar foto</h2>
-      <button id="photoPickerClose" style="font-size:1.1rem; padding:4px 10px;">âœ•</button>
+      <button id="photoPickerClose" style="font-size:1.1rem; padding:4px 10px;">✕</button>
     </div>
     <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; align-items:center;">
-      <input type="text" id="photoPickerSearch" placeholder="Buscar foto por nombreâ€¦" style="flex:1; min-width:160px; padding:7px 10px; font-size:0.82rem;">
+      <input type="text" id="photoPickerSearch" placeholder="Buscar foto por nombre…" style="flex:1; min-width:160px; padding:7px 10px; font-size:0.82rem;">
       <label class="file-drop" style="flex-shrink:0; border-radius:8px; padding:8px 14px; font-size:0.78rem; margin:0; border:1px dashed var(--border); cursor:pointer; background:var(--panel-2); color:var(--text);">
         <input type="file" id="photoPickerUpload" accept="image/*" multiple>
-        âž• Subir foto nueva
+        ➕ Subir foto nueva
       </label>
     </div>
     <p style="font-size:0.74rem; color:var(--muted); margin:0 0 10px;">Haz clic en una foto para asignarla al producto. Las fotos <span style="color:var(--danger); font-weight:600;">rojas</span> no están asignadas a ningún producto.</p>
@@ -431,8 +431,8 @@
 <div class="modal-overlay" id="didiModal">
   <div class="modal-box wide-modal">
     <div class="didi-header">
-      <h2><span>ðŸ½ï¸</span> Ficha de artículo — Didi Food</h2>
-      <button class="close-btn" id="didiCloseBtn" title="Cerrar (Esc)">âœ•</button>
+      <h2><span>🍽️</span> Ficha de artículo — Didi Food</h2>
+      <button class="close-btn" id="didiCloseBtn" title="Cerrar (Esc)">✕</button>
     </div>
 
     <div class="didi-section-title">
@@ -446,7 +446,7 @@
         <label>Código de barras del artículo / SKU</label>
         <div class="didi-input-wrap">
           <input type="text" id="didiSku" placeholder="Código de barras o SKU">
-          <button class="copy-btn" data-target="didiSku">ðŸ“‹ Copiar</button>
+          <button class="copy-btn" data-target="didiSku">📋 Copiar</button>
         </div>
       </div>
 
@@ -456,7 +456,7 @@
         <div class="didi-input-wrap">
           <input type="text" id="didiNombre" placeholder="Nombre comercial del producto">
           <button class="ai-btn-inline" id="didiImproveTitleBtn">✨ Mejorar</button>
-          <button class="copy-btn" data-target="didiNombre">ðŸ“‹ Copiar</button>
+          <button class="copy-btn" data-target="didiNombre">📋 Copiar</button>
         </div>
       </div>
 
@@ -472,11 +472,11 @@
             <p style="font-size:0.7rem;">Puedes cambiar o editar la imagen aquí mismo para que cumpla los requisitos de Didi Food.</p>
             <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:4px;">
               <label class="copy-btn" style="cursor:pointer;">
-                ðŸ“· Subir foto
+                📷 Subir foto
                 <input type="file" id="didiPhotoInput" accept="image/*" style="display:none;">
               </label>
-              <button class="copy-btn" id="didiEditPhotoBtn">âœï¸ Editar foto</button>
-              <button class="copy-btn" id="didiDownloadPhotoBtn">ðŸ“¥ Descargar foto</button>
+              <button class="copy-btn" id="didiEditPhotoBtn">✏️ Editar foto</button>
+              <button class="copy-btn" id="didiDownloadPhotoBtn">📥 Descargar foto</button>
             </div>
           </div>
         </div>
@@ -489,7 +489,7 @@
           <textarea id="didiDesc" rows="3" placeholder="Descripción atractiva para los clientes de Didi Food"></textarea>
           <div style="display:flex; flex-direction:column; gap:4px;">
             <button class="ai-btn-inline" id="didiImproveDescBtn">✨ Mejorar</button>
-            <button class="copy-btn" data-target="didiDesc">ðŸ“‹ Copiar</button>
+            <button class="copy-btn" data-target="didiDesc">📋 Copiar</button>
           </div>
         </div>
       </div>
@@ -499,7 +499,7 @@
         <label>Identificación adicional (Nombre original del Excel)</label>
         <div class="didi-input-wrap">
           <input type="text" id="didiSkuOrig" placeholder="Identificación adicional">
-          <button class="copy-btn" data-target="didiSkuOrig">ðŸ“‹ Copiar</button>
+          <button class="copy-btn" data-target="didiSkuOrig">📋 Copiar</button>
         </div>
       </div>
 
@@ -509,14 +509,14 @@
           <label>Establece el precio ($)</label>
           <div class="didi-input-wrap">
             <input type="text" id="didiPrecio" placeholder="0">
-            <button class="copy-btn" data-target="didiPrecio">ðŸ“‹ Copiar</button>
+            <button class="copy-btn" data-target="didiPrecio">📋 Copiar</button>
           </div>
         </div>
         <div class="didi-field">
           <label>Cantidad disponible (Stock)</label>
           <div class="didi-input-wrap">
             <input type="text" id="didiStock" placeholder="Ilimitado o cantidad">
-            <button class="copy-btn" data-target="didiStock">ðŸ“‹ Copiar</button>
+            <button class="copy-btn" data-target="didiStock">📋 Copiar</button>
           </div>
         </div>
       </div>
@@ -527,7 +527,7 @@
         <div class="didi-input-wrap">
           <input type="text" id="didiCategoria" list="didiCatList" placeholder="Ej: Bebidas, Snacks, Abarrotes...">
           <datalist id="didiCatList"></datalist>
-          <button class="copy-btn" data-target="didiCategoria">ðŸ“‹ Copiar</button>
+          <button class="copy-btn" data-target="didiCategoria">📋 Copiar</button>
         </div>
       </div>
 
@@ -538,14 +538,14 @@
           <label>Peso (g)</label>
           <div class="didi-input-wrap">
             <input type="text" id="didiPeso" placeholder="Ej: 500">
-            <button class="copy-btn" data-target="didiPeso">ðŸ“‹</button>
+            <button class="copy-btn" data-target="didiPeso">📋</button>
           </div>
         </div>
         <div class="didi-field">
           <label>Volumen (ml)</label>
           <div class="didi-input-wrap">
             <input type="text" id="didiVolumen" placeholder="Ej: 350">
-            <button class="copy-btn" data-target="didiVolumen">ðŸ“‹</button>
+            <button class="copy-btn" data-target="didiVolumen">📋</button>
           </div>
         </div>
       </div>
@@ -569,13 +569,13 @@
     <!-- Navegación inferior -->
     <div class="didi-footer-nav">
       <div style="display:flex; gap:6px;">
-        <button id="didiPrevBtn">â¬… Anterior</button>
-        <button id="didiNextBtn">Siguiente âž¡</button>
+        <button id="didiPrevBtn">⬅ Anterior</button>
+        <button id="didiNextBtn">Siguiente ➡</button>
         <span id="didiProductCounter" style="align-self:center; font-size:0.75rem; color:var(--muted); font-family:var(--mono); margin-left:4px;">1 / 1</span>
       </div>
       <div style="display:flex; gap:6px;">
-        <button id="didiCopyAllBtn" class="copy-btn" style="border-color:var(--accent); color:var(--accent);">ðŸ“‹ Copiar ficha para Didi</button>
-        <button id="didiSaveBtn" class="primary">ðŸ’¾ Guardar cambios</button>
+        <button id="didiCopyAllBtn" class="copy-btn" style="border-color:var(--accent); color:var(--accent);">📋 Copiar ficha para Didi</button>
+        <button id="didiSaveBtn" class="primary">💾 Guardar cambios</button>
       </div>
     </div>
   </div>
@@ -585,8 +585,8 @@
 <div class="modal-overlay" id="aiConfigModal">
   <div class="modal-box">
     <div class="didi-header">
-      <h2>âš™ï¸ Configuración de IA</h2>
-      <button class="close-btn" id="aiConfigCloseBtn">âœ•</button>
+      <h2>⚙️ Configuración de IA</h2>
+      <button class="close-btn" id="aiConfigCloseBtn">✕</button>
     </div>
     <p style="font-size:0.78rem; color:var(--muted); line-height:1.4;">
       Por defecto, el panel usa un <b>motor inteligente local optimizado para Didi Food</b> que funciona sin internet, gratis y sin límites en tu PC.
@@ -1045,7 +1045,7 @@
         });
       }
 
-      // â”€â”€ 1. Leer meta en transacción propia â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      // ── 1. Leer meta en transacción propia ──────────────────────────────
       const meta = await reqToPromise(
         db.transaction(["meta"], "readonly").objectStore("meta").get("current_catalog")
       );
@@ -1059,7 +1059,7 @@
       if ($("#excelCols")) $("#excelCols").style.display = "block";
       populateColSelects();
 
-      // â”€â”€ 2. Leer imágenes en transacción propia â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      // ── 2. Leer imágenes en transacción propia ───────────────────────────
       const storedImgs = await reqToPromise(
         db.transaction(["images"], "readonly").objectStore("images").getAll()
       );
@@ -1074,7 +1074,7 @@
         if ($("#photosName")) $("#photosName").textContent = `${images.length} foto(s) en BD`;
       }
 
-      // â”€â”€ 3. Leer productos en transacción propia â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      // ── 3. Leer productos en transacción propia ───────────────────────────
       const storedProds = await reqToPromise(
         db.transaction(["products"], "readonly").objectStore("products").getAll()
       );
@@ -1340,7 +1340,7 @@
     const el = $("#dupWarning");
     if (!el) return;
     if (!duplicateSkus.length){ el.innerHTML = ""; return; }
-    el.innerHTML = `<div class="warn-banner">⚠️ Hay ${duplicateSkus.length} SKU repetidos en tu Excel: ${duplicateSkus.slice(0,15).map(s=>`<b>${s}</b>`).join(", ")}${duplicateSkus.length>15?"â€¦":""}. Revísalos para no duplicar productos en Didi Food.</div>`;
+    el.innerHTML = `<div class="warn-banner">⚠️ Hay ${duplicateSkus.length} SKU repetidos en tu Excel: ${duplicateSkus.slice(0,15).map(s=>`<b>${s}</b>`).join(", ")}${duplicateSkus.length>15?"…":""}. Revísalos para no duplicar productos en Didi Food.</div>`;
   }
 
   // ---------- fotos ----------
@@ -1561,7 +1561,7 @@
     const pendWrap = $("#pendingList");
     const pendientes = items.filter(i => !i.image);
     if (!total){ pendWrap.innerHTML = `<p class="empty-mini">Sube un Excel para ver esta lista.</p>`; }
-    else if (!pendientes.length){ pendWrap.innerHTML = `<p class="empty-mini">Todos los productos tienen foto ðŸŽ‰</p>`; }
+    else if (!pendientes.length){ pendWrap.innerHTML = `<p class="empty-mini">Todos los productos tienen foto 🎉</p>`; }
     else {
       pendWrap.innerHTML = pendientes.map(it => {
         const opts = orphans.map(o => `<option value="${o.base}">${o.name}</option>`).join("");
@@ -1692,7 +1692,7 @@
     if (item.image){
       photo.innerHTML = `<img src="${item.image.url}" alt="${item.sku}">`;
       const editBtn = document.createElement("button");
-      editBtn.textContent = "âœï¸ Editar";
+      editBtn.textContent = "✏️ Editar";
       editBtn.style.cssText = "position:absolute; bottom:6px; right:6px; font-size:0.66rem; padding:4px 8px; z-index:2;";
       editBtn.addEventListener("click", (ev) => { ev.stopPropagation(); openEditor(item); });
       photo.appendChild(editBtn);
@@ -1760,7 +1760,7 @@
     const actions = document.createElement("div"); actions.className = "card-actions";
 
     const btnOpenDidi = document.createElement("button");
-    btnOpenDidi.textContent = "ðŸ‘ï¸ Ficha Didi";
+    btnOpenDidi.textContent = "👁️ Ficha Didi";
     btnOpenDidi.style.fontWeight = "600";
     btnOpenDidi.addEventListener("click", () => openDidiModal(item));
     actions.appendChild(btnOpenDidi);
@@ -1776,7 +1776,7 @@
     if (!item.image) btnDownload.disabled = true;
     btnDownload.addEventListener("click", async () => {
       if (!item.image) return;
-      btnDownload.disabled = true; btnDownload.textContent = "â€¦";
+      btnDownload.disabled = true; btnDownload.textContent = "…";
       try{
         const blob = await getDownloadBlob(item);
         const ext = $("#optimizeToggle").checked ? ".jpg" : (item.image.name.match(/\.[^.]+$/) || [".jpg"])[0];
@@ -1791,7 +1791,7 @@
     btnImprove.textContent = "✨ Mejorar";
     btnImprove.className = "primary";
     btnImprove.addEventListener("click", async () => {
-      btnImprove.disabled = true; btnImprove.textContent = "â€¦";
+      btnImprove.disabled = true; btnImprove.textContent = "…";
       await improveProduct(item, true, true);
       titleSpan.textContent = item.title;
       textarea.value = item.desc;
@@ -1898,7 +1898,7 @@
 
   $("#btnClassify").addEventListener("click", async () => {
     if (!items.length) return;
-    const btn = $("#btnClassify"); btn.disabled = true; btn.textContent = "Clasificandoâ€¦";
+    const btn = $("#btnClassify"); btn.disabled = true; btn.textContent = "Clasificando…";
     items.forEach(it => {
       it.aiCategory = classifyCategorySmart(it);
       setNote(it.skuNorm, {aiCategory: it.aiCategory});
@@ -1906,7 +1906,7 @@
     populateCategoriaSelect();
     renderCatalog();
     dbSaveAll();
-    btn.disabled = false; btn.textContent = "ðŸ·ï¸ Clasificar categorías";
+    btn.disabled = false; btn.textContent = "🏷️ Clasificar categorías";
     toast(`Categorías asignadas a ${items.length} productos`);
   });
 
@@ -1919,7 +1919,7 @@
       await improveProduct(item, true, true);
       done++;
       if (done % 50 === 0 || done === items.length){
-        btn.textContent = `Mejorandoâ€¦ (${done}/${items.length})`;
+        btn.textContent = `Mejorando… (${done}/${items.length})`;
       }
     }
     renderCatalog();
@@ -1932,7 +1932,7 @@
   $("#bulkImprove").addEventListener("click", async () => {
     const chosen = items.filter(i => selected.has(i.sku));
     if (!chosen.length) return;
-    const btn = $("#bulkImprove"); btn.disabled = true; btn.textContent = "Mejorandoâ€¦";
+    const btn = $("#bulkImprove"); btn.disabled = true; btn.textContent = "Mejorando…";
     for (const item of chosen){
       await improveProduct(item, true, true);
     }
@@ -1970,7 +1970,7 @@
   async function exportMissingXlsx(){
     const missing = items.filter(i => !i.image);
     if (!missing.length){
-      toast("¡Todos los productos tienen foto! No hay faltantes ðŸŽ‰");
+      toast("¡Todos los productos tienen foto! No hay faltantes 🎉");
       return;
     }
     const cols = excelHeaders.filter(Boolean);
@@ -2017,13 +2017,13 @@
   $("#btnExportZip").addEventListener("click", async () => {
     const withPhoto = items.filter(i => i.image);
     if (!withPhoto.length) return;
-    const btn = $("#btnExportZip"); btn.disabled = true; btn.textContent = "Preparandoâ€¦";
+    const btn = $("#btnExportZip"); btn.disabled = true; btn.textContent = "Preparando…";
     try{
       const zip = new JSZip();
       const optimize = $("#optimizeToggle").checked;
       for (let i=0; i<withPhoto.length; i++){
         const item = withPhoto[i];
-        btn.textContent = `Preparandoâ€¦ (${i+1}/${withPhoto.length})`;
+        btn.textContent = `Preparando… (${i+1}/${withPhoto.length})`;
         const blob = optimize ? await optimizeToSquareBlob(item.image.file) : item.image.file;
         const ext = optimize ? "jpg" : (item.image.name.split(".").pop() || "jpg");
         zip.file(`${item.sku}.${ext}`, blob);
@@ -2060,7 +2060,7 @@
 
   let lastCompare = {enRappi:[], enCatalogo:[]};
   function runCompare(){
-    $("#navCountComparar").textContent = rappiAOA.length ? "â€¢" : "–";
+    $("#navCountComparar").textContent = rappiAOA.length ? "•" : "–";
     if (!rappiAOA.length || !items.length){
       $("#compareResult").innerHTML = items.length ? "" : `<p class="hint" style="color:var(--muted); font-size:0.8rem;">Sube primero tu Excel principal (en el menú Resumen) para poder comparar.</p>`;
       return;
@@ -2248,8 +2248,8 @@
       $("#didiDownloadPhotoBtn").disabled = false;
       $("#didiEditPhotoBtn").disabled = false;
     } else {
-      photoBox.innerHTML = `<div class="didi-photo-box empty">â˜ï¸<br>Agregar foto<br><span style="font-size:0.65rem; color:var(--danger);">Sin foto</span></div>`;
-      photoStatus.textContent = "⚠️ Estado: Sin foto asignada";
+      photoBox.innerHTML = `<div class="didi-photo-box empty">☁️<br>Agregar foto<br><span style="font-size:0.65rem; color:var(--danger);">Sin foto</span></div>`;
+      photoStatus.textContent = "⚠️ Estado: Sin foto asignada";
       photoStatus.style.color = "var(--danger)";
       $("#didiDownloadPhotoBtn").disabled = true;
       $("#didiEditPhotoBtn").disabled = true;
@@ -2324,7 +2324,7 @@
   $("#didiImproveAllBtn").addEventListener("click", async () => {
     const item = items[currentDidiIndex];
     if (!item) return;
-    const btn = $("#didiImproveAllBtn"); btn.disabled = true; btn.textContent = "Mejorandoâ€¦";
+    const btn = $("#didiImproveAllBtn"); btn.disabled = true; btn.textContent = "Mejorando…";
     await improveProduct(item, true, true);
     $("#didiNombre").value = item.title;
     $("#didiDesc").value = item.desc;
@@ -2341,7 +2341,7 @@
         try{
           await navigator.clipboard.writeText(el.value);
           const orig = btn.textContent;
-          btn.textContent = "âœ“ ¡Copiado!";
+          btn.textContent = "✓ ¡Copiado!";
           setTimeout(() => btn.textContent = orig, 1300);
         }catch(e){
           el.select();

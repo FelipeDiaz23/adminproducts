@@ -117,7 +117,7 @@
 
   .bulkbar{
     display:none; align-items:center; gap:10px; background:var(--accent-soft); border:1px solid var(--accent);
-    border-radius:9px; padding:9px 12px; margin-bottom:14px; font-size:0.8rem; color:var(--accent-ink); flex-wrap:wrap;
+    border-radius:99px; padding:9px 12px; margin-bottom:14px; font-size:0.8rem; color:var(--accent-ink); flex-wrap:wrap;
   }
   .bulkbar.show{display:flex;}
   .bulkbar b{font-family:var(--mono);}
@@ -650,13 +650,14 @@
       fbApp = firebase.initializeApp(firebaseConfig);
       fbDb = firebase.firestore();
       
-      // FIX del error experimentalForceLongPolling y experimentalAutoDetectLongPolling
-      // Usar settings sin duplicar configuraciones de transportes incompatibles.
-      fbDb.settings({ experimentalForceLongPolling: true });
+      // Pasar { merge: true } evita la advertencia de sobreescritura de host
+      fbDb.settings({ 
+        experimentalForceLongPolling: true 
+      }, { merge: true });
       
       fbStorage = firebase.storage();
       isFirebaseReady = true;
-      console.log("Firebase initialized correctly.");
+      console.log("Firebase inicializado correctamente sin advertencias.");
     }
   } catch (err) {
     console.warn("Error inicializando Firebase:", err);
@@ -816,7 +817,7 @@
     });
 
     updateCounters();
-    showToast(`Se vincularon ${matchedCount} fotos por SKU.`);
+    showToast(`Se vinculó ${matchedCount} foto(s) por SKU.`);
   }
 
   function updateCounters() {

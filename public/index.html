@@ -835,6 +835,11 @@
   }
 
   // Subir foto a Firebase Storage
+  // Sube la foto a Firebase Storage y devuelve su URL pública.
+  // OJO: ya NO escribe nada en Firestore aquí — eso evita crear un producto
+  // "fantasma" que solo tenga la foto y no el nombre/fila del Excel. El único
+  // lugar que escribe productos en Firestore es fbSaveAll(), con todos los
+  // datos juntos (nombre, fila, foto) en un solo documento.
   async function fbUploadPhoto(file, skuNorm, sku) {
     if (!isFirebaseReady || !fbStorage || !file) return null;
     try {
@@ -844,16 +849,6 @@
       const snapshot = await storageRef.put(file);
       const downloadURL = await snapshot.ref.getDownloadURL();
       console.log("Foto subida a Firebase Storage:", downloadURL);
-
-      // Guardar URL en el producto de Firestore (mismo id saneado que usa fbSaveAll)
-      const safeDocId = String(skuNorm || sku || "").trim().replace(/[\.\/\#\$\[\]]/g, "_");
-      if (safeDocId) {
-        await fbDb.collection("products").doc(safeDocId).set({
-          imageUrl: downloadURL,
-          imageName: file.name
-        }, { merge: true });
-      }
-
       return { url: downloadURL, name: file.name };
     } catch(e) {
       console.error("Error subiendo foto a Firebase Storage:", e);
@@ -1173,10 +1168,21 @@
   }
   function parseWorkbook(file, cb){
     const reader = new FileReader();
+    const isCsv = /\.csv$/i.test(file.name);
     reader.onload = function(e){
       try{
-        const data = new Uint8Array(e.target.result);
-        const wb = XLSX.read(data, {type:"array"});
+        let wb;
+        if (isCsv) {
+          // Los .csv hay que decodificarlos explícitamente como texto UTF-8 antes
+          // de pasárselos a SheetJS. Si se le pasan los bytes crudos, SheetJS a
+          // veces los interpreta como Latin-1 y las tildes/ñ salen como "Ã±".
+          const bytes = new Uint8Array(e.target.result);
+          const text = new TextDecoder("utf-8").decode(bytes);
+          wb = XLSX.read(text, {type:"string"});
+        } else {
+          const data = new Uint8Array(e.target.result);
+          wb = XLSX.read(data, {type:"array"});
+        }
         const sheet = wb.Sheets[wb.SheetNames[0]];
         const aoa = XLSX.utils.sheet_to_json(sheet, {header:1, defval:"", raw:false});
         let headerRowIdx = aoa.findIndex(r => r.some(c => String(c).trim() !== ""));
@@ -1204,6 +1210,7 @@
       $("#excelCols").style.display = "block";
       rebuildRowsFromAOA();
       rebuildItems();
+      scheduleFbSave();
       toast(`Excel cargado: ${rawExcelAOA.length} filas`);
     });
   });
@@ -1280,20 +1287,24 @@
   $("#skuCol").addEventListener("change", function(e){
     skuColIndex = parseInt(e.target.value, 10);
     rebuildRowsFromAOA(); rebuildItems();
+    scheduleFbSave();
   });
   $("#nameCol").addEventListener("change", function(e){
     nameColIndex = parseInt(e.target.value, 10);
     // Borrar títulos cacheados para que se regeneren con la nueva columna
     Object.keys(notes).forEach(k => { if (notes[k]) delete notes[k].title; });
     rebuildItems();
+    scheduleFbSave();
   });
   $("#priceCol").addEventListener("change", function(e){
     priceColIndex = parseInt(e.target.value, 10);
     rebuildItems();
+    scheduleFbSave();
   });
   $("#catColSel").addEventListener("change", function(e){
     catColIndex = parseInt(e.target.value, 10);
     rebuildItems();
+    scheduleFbSave();
   });
 
   function rebuildRowsFromAOA(){

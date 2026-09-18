@@ -646,17 +646,21 @@
 
   try {
     if (typeof firebase !== "undefined") {
+      // 1. Inicializar App
       fbApp = firebase.initializeApp(firebaseConfig);
       
-      // Pasar { merge: true } como segundo argumento en settings()
+      // 2. Obtener instancia de Firestore
       fbDb = firebase.firestore();
+      
+      // 3. Aplicar settings (solo pasa 1 objeto de configuración)
       fbDb.settings({ 
         experimentalForceLongPolling: true 
-      }, { merge: true });
+      });
 
+      // 4. Inicializar Storage
       fbStorage = firebase.storage();
       isFirebaseReady = true;
-      console.log("Firebase inicializado correctamente sin advertencias.");
+      console.log("Firebase inicializado correctamente.");
     }
   } catch (err) {
     console.warn("Error inicializando Firebase:", err);

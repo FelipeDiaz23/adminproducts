@@ -650,6 +650,13 @@
     if (typeof firebase !== "undefined") {
       fbApp = firebase.initializeApp(firebaseConfig);
       fbDb = firebase.firestore();
+      // Algunos antivirus/firewalls/redes corporativas bloquean el canal
+      // de conexión en tiempo real (WebSocket) que usa Firestore por defecto,
+      // aunque las peticiones HTTPS normales (como subir a Storage) sí pasen.
+      // Esto fuerza a Firestore a usar "long polling" clásico, mucho más
+      // compatible con ese tipo de redes, y evita el error
+      // "client is offline" en esos casos.
+      fbDb.settings({ experimentalForceLongPolling: true, merge: true });
       fbStorage = firebase.storage();
       isFirebaseReady = true;
       console.log("🔥 Firebase conectado exitosamente a:", firebaseConfig.projectId);

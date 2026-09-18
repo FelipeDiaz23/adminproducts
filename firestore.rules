@@ -1,0 +1,10 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Modo de prueba: cualquiera con el link puede leer y escribir el catálogo.
+    // Si más adelante quieres protegerlo con una clave o login, dime y lo ajustamos.
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}

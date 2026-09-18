@@ -196,9 +196,9 @@
   .badge-db{background:#1E6F6322; color:var(--teal); font-size:0.68rem; font-weight:600; padding:2px 7px; border-radius:6px; border:1px solid var(--teal);}
 </style>
 
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-storage-compat.js"></script>
 
 </head>
 <body>
@@ -709,8 +709,12 @@
 
       const BATCH_SIZE = 250;
       for (let i = 0; i < items.length; i += BATCH_SIZE) {
-        const batch = fbDb.batch();
         const chunk = items.slice(i, i + BATCH_SIZE);
+
+        // Antes de escribir, sube a Storage cualquier foto que aún sea solo local (blob:)
+        await Promise.all(chunk.map(item => ensureItemPhotoUploaded(item)));
+
+        const batch = fbDb.batch();
         chunk.forEach(item => {
           const safeId = String(item.skuNorm || item.sku || "prod_" + Math.random()).replace(/[\.\/\#\$\[\]]/g, "_");
           const docRef = fbDb.collection("products").doc(safeId);
@@ -741,7 +745,11 @@
       if (err && err.code === "permission-denied") {
         alert("⚠️ Firebase rechazó la escritura por Reglas de Seguridad.\n\nVe a console.firebase.google.com > Firestore Database > pestaña Reglas y pon:\nallow read, write: if true;\n\nLuego dale Publicar.");
       } else {
-        toast("Error Firebase: " + (err.message || err));
+        if (err && (String(err.code).includes("not-found") || String(err.message).toLowerCase().includes("not found") || String(err).includes("404"))) {
+        alert("⚠️ La Base de Datos Firestore aún NO ha sido creada en tu Firebase.\n\nPasos para activarla (toma 30 segundos):\n1. Entra a console.firebase.google.com\n2. Entra a tu proyecto 'adminproduct-1017d'\n3. Ve a 'Firestore Database' en el menú izquierdo\n4. Haz clic en el botón 'Crear base de datos'\n5. Elige 'Modo de prueba' y dale Habilitar.");
+      } else {
+        alert("Error de Firebase: " + (err.message || err));
+      }
       }
     } finally {
       if (syncBtn) {
@@ -837,16 +845,33 @@
       const downloadURL = await snapshot.ref.getDownloadURL();
       console.log("Foto subida a Firebase Storage:", downloadURL);
 
-      // Guardar URL en el producto de Firestore
-      await fbDb.collection("products").doc(skuNorm).set({
-        imageUrl: downloadURL,
-        imageName: file.name
-      }, { merge: true });
+      // Guardar URL en el producto de Firestore (mismo id saneado que usa fbSaveAll)
+      const safeDocId = String(skuNorm || sku || "").trim().replace(/[\.\/\#\$\[\]]/g, "_");
+      if (safeDocId) {
+        await fbDb.collection("products").doc(safeDocId).set({
+          imageUrl: downloadURL,
+          imageName: file.name
+        }, { merge: true });
+      }
 
       return { url: downloadURL, name: file.name };
     } catch(e) {
       console.error("Error subiendo foto a Firebase Storage:", e);
       return null;
+    }
+  }
+
+  // Sube a Storage cualquier foto de un item que todavía sea solo local (blob:)
+  // y deja la URL pública permanente en item.image.url para que quede en Firestore.
+  async function ensureItemPhotoUploaded(item){
+    if (!isFirebaseReady || !item || !item.image || !item.image.file) return;
+    if (item.image.url && !item.image.url.startsWith("blob:")) return; // ya subida
+    const safeId = String(item.skuNorm || item.sku || "").trim().replace(/[\.\/\#\$\[\]]/g, "_");
+    if (!safeId) return;
+    const uploaded = await fbUploadPhoto(item.image.file, safeId, item.sku);
+    if (uploaded && uploaded.url) {
+      item.image.url = uploaded.url;
+      item.imageUrl = uploaded.url;
     }
   }
 
@@ -929,7 +954,17 @@
     });
   }
 
+  // Guarda en Firebase con un pequeño retraso, para no disparar una escritura
+  // por cada tecla cuando el usuario edita varios campos seguidos.
+  let _fbSaveTimer = null;
+  function scheduleFbSave(){
+    if (!isFirebaseReady) return;
+    clearTimeout(_fbSaveTimer);
+    _fbSaveTimer = setTimeout(() => { fbSaveAll(); }, 1200);
+  }
+
   async function dbSaveAll(){
+    scheduleFbSave();
     try{
       const db = await dbOpen();
       const tx = db.transaction(["products", "meta"], "readwrite");
@@ -961,27 +996,21 @@
   }
 
   
-  async function uploadPhotoToServer(file, customName){
-    if (!file) return;
-    try {
-      const reader = new FileReader();
-      reader.onload = async () => {
-        try {
-          await fetch('/api/upload-photo', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-              filename: customName || file.name,
-              base64: reader.result
-            })
-          });
-        } catch(e){}
-      };
-      reader.readAsDataURL(file);
-    } catch(e){}
-  }
   async function dbSaveImages(imgs){
-    if (imgs && imgs.length) imgs.forEach(im => { if (im.file) uploadPhotoToServer(im.file, im.name); });
+    if (imgs && imgs.length) {
+      imgs.forEach(im => {
+        if (im.file && isFirebaseReady) {
+          const skuGuess = im.numKey || im.base || "";
+          fbUploadPhoto(im.file, normKey(String(skuGuess)), skuGuess).then(res => {
+            if (res && res.url) {
+              im.url = res.url; // reemplaza la vista previa local por la URL pública permanente
+              rebuildItems();
+              scheduleFbSave();
+            }
+          });
+        }
+      });
+    }
     try{
       const db = await dbOpen();
       const tx = db.transaction("images", "readwrite");
@@ -1058,7 +1087,7 @@
           };
         });
         rebuildItems();
-        toast(`Base de datos cargada: ${items.length} productos en este PC`);
+        toast(`Copia local cargada: ${items.length} productos (sin conexión a la nube)`);
       }
 
       updateDbBadge();
@@ -1069,7 +1098,7 @@
   }
 
   async function dbClearAll(){
-    if (!confirm("¿Deseas vaciar la base de datos local y empezar de cero? Se borrarán los productos y fotos guardados en este PC.")) return;
+    if (!confirm("¿Deseas vaciar el catálogo (en la nube y en este navegador) y empezar de cero?")) return;
     try{
       const db = await dbOpen();
       const tx = db.transaction(["products", "images", "meta"], "readwrite");
@@ -1086,21 +1115,39 @@
       $("#excelCols").style.display = "none";
       $("#excelName").textContent = "";
       $("#photosName").textContent = "";
+
+      if (isFirebaseReady) {
+        try {
+          await fbDb.collection("catalog").doc("meta").delete();
+          const snap = await fbDb.collection("products").get();
+          const CHUNK = 400;
+          let batch = fbDb.batch(); let count = 0;
+          for (const doc of snap.docs) {
+            batch.delete(doc.ref); count++;
+            if (count === CHUNK) { await batch.commit(); batch = fbDb.batch(); count = 0; }
+          }
+          if (count > 0) await batch.commit();
+        } catch(e){ console.warn("No se pudo vaciar el catálogo en Firebase:", e); }
+      }
+
       rebuildItems();
       updateDbBadge();
-      toast("Base de datos local vaciada con éxito");
+      toast("Catálogo vaciado con éxito");
     }catch(err){
-      toast("Error al limpiar base de datos");
+      toast("Error al limpiar el catálogo");
     }
   }
 
   function updateDbBadge(){
     const b = $("#dbBadge");
-    if (b) b.textContent = items.length ? `${items.length} en PC` : "0 guardados";
+    const enNube = isFirebaseReady;
+    if (b) b.textContent = items.length ? `${items.length} ${enNube ? "en la nube" : "en este navegador"}` : "0 guardados";
     const h = $("#dbHint");
     if (h) h.textContent = items.length
-      ? `Hay ${items.length} productos y ${images.length} fotos guardados en tu PC.`
-      : "Todo lo que subas se guarda en este PC automáticamente. Si cierras el navegador, no se pierde nada.";
+      ? `Hay ${items.length} productos y ${images.length} fotos guardados ${enNube ? "en la nube (Firebase)" : "solo en este navegador"}.`
+      : (enNube
+          ? "Todo lo que subas se guarda automáticamente en la nube: cualquier persona con este enlace verá lo mismo."
+          : "Firebase no está disponible; se está guardando solo en este navegador.");
   }
 
   // ---------- Configuración de IA (Local vs API) ----------
@@ -1285,16 +1332,23 @@
     images = files.map(f => {
       const baseName = stripExt(f.name);
       const skuNum = extractSkuNumber(baseName);
-      if (isFirebaseReady) {
-        fbUploadPhoto(f, normKey(skuNum || baseName), skuNum);
-      }
-      return {
+      const im = {
         file: f,
         name: f.name,
         base: normKey(baseName),
-        numKey: extractSkuNumber(baseName),
+        numKey: skuNum,
         url: URL.createObjectURL(f)
       };
+      if (isFirebaseReady) {
+        fbUploadPhoto(f, normKey(skuNum || baseName), skuNum).then(res => {
+          if (res && res.url) {
+            im.url = res.url;
+            rebuildItems();
+            scheduleFbSave();
+          }
+        });
+      }
+      return im;
     });
     $("#photosName").textContent = `${files.length} foto(s)`;
     rebuildItems();
@@ -2315,7 +2369,7 @@
     dbSaveImages([newImg]);
     rebuildItems();
     renderDidiModalData(items[currentDidiIndex]);
-    toast("Foto adjuntada y guardada en BD local");
+    toast("Foto adjuntada y sincronizando con la nube...");
   });
 
   $("#didiDownloadPhotoBtn").addEventListener("click", async () => {
@@ -2498,8 +2552,19 @@
     });
   }
 
-  // Carga inicial desde Base de Datos local
-  dbLoadAll();
+  // Carga inicial: primero intenta la nube (Firebase), así cualquier dispositivo
+  // que abra este enlace ve el mismo catálogo. Si no hay nube o falla, usa la
+  // copia local de este navegador como respaldo (modo sin conexión).
+  (async function bootLoad(){
+    let loadedFromCloud = false;
+    if (isFirebaseReady) {
+      try { loadedFromCloud = await fbLoadAll(); }
+      catch(e) { console.warn("No se pudo cargar desde Firebase al iniciar:", e); }
+    }
+    if (!loadedFromCloud) {
+      await dbLoadAll();
+    }
+  })();
 
 })();
 </script>

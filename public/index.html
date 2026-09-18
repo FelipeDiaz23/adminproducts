@@ -27,12 +27,6 @@
       --teal:#5BC3B1; --teal-soft:#17302B; --danger:#E2695A; --danger-soft:#3B221D;
     }
   }
-  :root[data-theme="dark"]{
-    --bg:#141517; --panel:#1D1E21; --panel-2:#25262A; --sidebar:#101113; --sidebar-2:#1A1B1E;
-    --border:#34363B; --text:#ECEDEE; --muted:#9EA1A6;
-    --accent:#E28A44; --accent-ink:#FFD9B0; --accent-soft:#3E2C18;
-    --teal:#5BC3B1; --teal-soft:#17302B; --danger:#E2695A; --danger-soft:#3B221D;
-  }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
   body{background:var(--bg); color:var(--text); font-family:var(--sans);}
@@ -41,7 +35,6 @@
   button:disabled{opacity:0.4; cursor:not-allowed;}
   button.primary{background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600;}
   button.primary:hover{filter:brightness(1.06);}
-  button.danger{background:var(--danger); border-color:var(--danger); color:#fff;}
   button.wide{width:100%;}
   select, input[type=text]{width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:7px; background:var(--panel-2); color:var(--text); font-family:var(--sans); font-size:0.83rem;}
   label.field-label{display:block; font-size:0.7rem; color:var(--muted); margin:8px 0 4px;}
@@ -52,619 +45,103 @@
     padding:18px 14px; gap:16px; position:sticky; top:0; height:100vh; overflow-y:auto;
   }
   .brand{font-weight:700; font-size:1.02rem; letter-spacing:-0.01em; display:flex; align-items:center; gap:8px; padding:0 4px;}
-  .navlist{display:flex; flex-direction:column; gap:2px;}
-  .navlist button{
-    background:transparent; border:none; color:#C7C9C4; text-align:left; padding:9px 10px; border-radius:7px;
-    font-size:0.86rem; display:flex; justify-content:space-between; align-items:center;
-  }
-  .navlist button:hover{background:var(--sidebar-2); color:#fff;}
-  .navlist button.active{background:var(--sidebar-2); color:#fff; font-weight:600;}
-  .navlist button .count{font-family:var(--mono); font-size:0.68rem; color:#8C8F89; background:#00000033; padding:1px 6px; border-radius:8px;}
-  .navlist button.active .count{color:var(--accent-ink); background:#00000040;}
-  .side-block{background:var(--sidebar-2); border-radius:9px; padding:12px; display:flex; flex-direction:column; gap:8px;}
+  .side-block{background:var(--sidebar-2); border-radius:99px; border-radius:9px; padding:12px; display:flex; flex-direction:column; gap:8px;}
   .side-block h3{margin:0; font-size:0.7rem; text-transform:uppercase; letter-spacing:.04em; color:#9EA19B; font-weight:600;}
   .side-block .hint{font-size:0.68rem; color:#9EA19B; line-height:1.35; margin:0;}
   .file-drop{
-    border:1.3px dashed #454940; border-radius:8px; padding:10px; text-align:center; font-size:0.76rem; color:#C7C9C4; cursor:pointer; background:#00000022;
+    border:1.3px dashed #454940; border-radius:8px; padding:10px; text-align:center; font-size:0.76rem; color:#C7C9C4; cursor:pointer; background:#00000022; display:block;
   }
   .file-drop:hover{border-color:var(--accent); color:#fff;}
   .file-drop input{display:none;}
   .file-drop .fname{display:block; margin-top:4px; font-family:var(--mono); font-size:0.66rem; color:var(--accent-ink); word-break:break-all;}
   .sidebar select{background:#00000022; color:#EDEEEC; border-color:#454940;}
-  .sidebar .note{font-size:0.66rem; color:#82857E; line-height:1.4; margin-top:auto; padding-top:10px;}
 
   .main-col{flex:1; min-width:0; display:flex; flex-direction:column;}
-  .topbar{
-    padding:16px clamp(14px,3vw,28px); border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;
-    background:var(--panel);
-  }
+  .topbar{padding:16px clamp(14px,3vw,28px); border-bottom:1px solid var(--border); background:var(--panel);}
   .topbar h1{margin:0; font-size:1.15rem; font-weight:700;}
-  .topbar p{margin:2px 0 0; font-size:0.8rem; color:var(--muted);}
   .content{padding:20px clamp(14px,3vw,28px); flex:1;}
-  .view{display:none;}
-  .view.active{display:block;}
 
   .cards-row{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-bottom:18px;}
   .stat-card{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:14px;}
   .stat-card .num{font-family:var(--mono); font-size:1.5rem; font-weight:600;}
   .stat-card .lbl{font-size:0.74rem; color:var(--muted); margin-top:2px;}
-  .stat-card.warn{background:var(--danger-soft); border-color:var(--danger);}
-  .stat-card.warn .num{color:var(--danger);}
+  
+  .grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(220px,1fr)); gap:14px;}
+  .card{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; display:flex; flex-direction:column;}
+  .photo{aspect-ratio:1/1; background:var(--panel-2); display:flex; align-items:center; justify-content:center; overflow:hidden;}
+  .photo img{width:100%; height:100%; object-fit:cover;}
+  .card-body{padding:12px; display:flex; flex-direction:column; gap:6px;}
+  .sku{font-family:var(--mono); font-size:0.75rem; color:var(--accent); font-weight:600;}
+  .title{font-size:0.85rem; font-weight:600; margin:0;}
+  .price{font-size:0.8rem; color:var(--muted);}
 
-  .progress-wrap{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px; margin-bottom:18px;}
-  .progress-wrap .row{display:flex; justify-content:space-between; font-size:0.82rem; margin-bottom:8px;}
-  .progress-bar{height:9px; border-radius:5px; background:var(--panel-2); overflow:hidden;}
-  .progress-bar > div{height:100%; background:var(--teal); border-radius:5px; transition:width .3s;}
-
-  .panel-box{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px; margin-bottom:16px;}
-  .panel-box h2{margin:0 0 10px; font-size:0.88rem; font-weight:600;}
-  .two-col{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
-  @media (max-width:760px){ .two-col{grid-template-columns:1fr;} }
-  .assign-row{display:flex; align-items:center; gap:6px; padding:6px 0; border-bottom:1px solid var(--border); font-size:0.78rem;}
-  .assign-row:last-child{border-bottom:none;}
-  .assign-row .sku-tag{font-family:var(--mono); font-weight:600; color:var(--accent-ink); min-width:78px;}
-  .assign-row select{flex:1; padding:5px 6px; font-size:0.74rem;}
-  .assign-row img.thumb{width:26px; height:26px; object-fit:cover; border-radius:4px; border:1px solid var(--border);}
-  .empty-mini{font-size:0.78rem; color:var(--muted); padding:6px 0;}
-
-  .toolbar{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:14px;}
-  .toolbar input[type=text]{max-width:260px;}
-  .toolbar select{max-width:170px;}
-  .chip-row{display:flex; gap:6px; flex-wrap:wrap;}
-  .chip{border:1px solid var(--border); background:var(--panel-2); color:var(--muted); border-radius:999px; padding:5px 11px; font-size:0.74rem; cursor:pointer; user-select:none;}
-  .chip.active{background:var(--accent-soft); border-color:var(--accent); color:var(--accent-ink); font-weight:600;}
-  .toggle-line{display:flex; align-items:center; gap:6px; font-size:0.76rem; color:var(--muted);}
-
-  .bulkbar{
-    display:none; align-items:center; gap:10px; background:var(--accent-soft); border:1px solid var(--accent);
-    border-radius:99px; padding:9px 12px; margin-bottom:14px; font-size:0.8rem; color:var(--accent-ink); flex-wrap:wrap;
-  }
-  .bulkbar.show{display:flex;}
-  .bulkbar b{font-family:var(--mono);}
-  .bulkbar .spacer{flex:1;}
-
-  .empty{border:1px dashed var(--border); border-radius:var(--radius); padding:44px 20px; text-align:center; color:var(--muted); font-size:0.9rem;}
-  .grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(230px,1fr)); gap:14px;}
-  .card{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); display:flex; flex-direction:column; overflow:hidden; position:relative;}
-  .card.reviewed{border-color:var(--teal);}
-  .card .select-box{position:absolute; top:8px; left:8px; z-index:2; width:18px; height:18px; accent-color:var(--accent);}
-  .photo{aspect-ratio:1/1; background:var(--panel-2); display:flex; align-items:center; justify-content:center; overflow:hidden; position:relative; color:var(--muted); font-size:0.72rem; flex-direction:column; gap:4px;}
-  .photo img{width:100%; height:100%; object-fit:cover; display:block;}
-  .card-body{padding:11px 12px 12px; display:flex; flex-direction:column; gap:8px; flex:1;}
-  .sku-line{display:flex; justify-content:space-between; align-items:center;}
-  .sku{font-family:var(--mono); font-size:0.76rem; color:var(--accent-ink); font-weight:600;}
-  .sku-orig{font-size:0.65rem; color:var(--muted); font-family:var(--mono); display:block; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-  .reviewed-toggle{display:flex; align-items:center; gap:4px; font-size:0.68rem; color:var(--muted);}
-  .fields{display:flex; flex-wrap:wrap; gap:5px;}
-  .fields span{background:var(--panel-2); border:1px solid var(--border); border-radius:6px; padding:2px 7px; font-size:0.68rem; color:var(--muted); max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-  textarea.desc{width:100%; min-height:60px; resize:vertical; border:1px solid var(--border); border-radius:7px; background:var(--panel-2); color:var(--text); font-family:var(--sans); font-size:0.8rem; padding:8px;}
-  .card-actions{display:flex; gap:6px; flex-wrap:wrap;}
-  .card-actions button{flex:1; min-width:0; font-size:0.71rem; padding:7px 6px;}
-  .badge-nofoto{position:absolute; top:6px; right:6px; background:var(--danger); color:#fff; font-size:0.62rem; padding:2px 6px; border-radius:5px;}
-  .manual-assign{display:flex; gap:5px; margin-top:4px;}
-  .manual-assign select{font-size:0.68rem; padding:4px 5px;}
-
-  .compare-result{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:10px;}
-  @media (max-width:700px){ .compare-result{grid-template-columns:1fr;} }
-  .compare-col h3{margin:0 0 6px; font-size:0.76rem; color:var(--muted); font-weight:600; display:flex; justify-content:space-between; align-items:center;}
-  .compare-col h3 button{font-size:0.65rem; padding:3px 7px;}
-  .compare-col ul{margin:0; padding-left:16px; max-height:220px; overflow-y:auto; font-family:var(--mono); font-size:0.72rem; background:var(--panel-2); border-radius:7px; padding:8px 8px 8px 22px;}
-  .compare-col li{margin-bottom:2px;}
-  .warn-banner{background:var(--danger-soft); border:1px solid var(--danger); color:var(--danger); border-radius:99px; padding:10px 14px; font-size:0.8rem; margin-bottom:16px;}
-  .toast{position:fixed; bottom:18px; left:50%; transform:translateX(-50%); background:var(--text); color:var(--bg); padding:9px 16px; border-radius:8px; font-size:0.8rem; opacity:0; pointer-events:none; transition:opacity .2s, transform .2s; z-index:50;}
-  .toast.show{opacity:1; transform:translateX(-50%) translateY(-4px);}
-  @media (max-width:760px){ .shell{flex-direction:column;} .sidebar{width:100%; height:auto; position:static;} }
-
-  .modal-overlay{display:none; position:fixed; inset:0; background:#000000AA; z-index:100; align-items:center; justify-content:center; padding:16px;}
-  .modal-overlay.show{display:flex;}
-  .modal-box{background:var(--panel); border-radius:12px; padding:18px; max-width:420px; width:100%; max-height:92vh; overflow-y:auto;}
-  .modal-box.wide-modal{max-width:640px;}
-  .modal-box h2{margin:0 0 12px; font-size:1rem;}
-  .editor-canvas-wrap{
-    width:100%; aspect-ratio:1/1; border-radius:8px; border:1px solid var(--border); overflow:hidden; touch-action:none; cursor:grab;
-    background-image: linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%);
-    background-size: 20px 20px; background-position: 0 0, 0 10px, 10px -10px, -10px 0px; background-color:#e9e9e9;
-  }
-  .editor-canvas-wrap canvas{width:100%; height:100%; display:block;}
-  .editor-row{margin-top:12px; font-size:0.78rem; color:var(--muted);}
-  .editor-row input[type=range]{width:100%;}
-  .editor-actions{display:flex; gap:8px; margin-top:16px;}
-  .editor-actions button{flex:1;}
-
-  .didi-header{display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border); padding-bottom:12px; margin-bottom:14px;}
-  .didi-header h2{margin:0; font-size:1.15rem; font-weight:700; display:flex; align-items:center; gap:8px;}
-  .didi-header .close-btn{background:none; border:none; font-size:1.3rem; line-height:1; padding:4px 8px; cursor:pointer; color:var(--muted);}
-  .didi-header .close-btn:hover{color:var(--text);}
-  .didi-section-title{font-size:0.95rem; font-weight:700; margin:16px 0 10px; color:var(--text); display:flex; align-items:center; justify-content:space-between;}
-  .didi-form-grid{display:flex; flex-direction:column; gap:12px;}
-  .didi-field{display:flex; flex-direction:column; gap:4px; position:relative;}
-  .didi-field label{font-size:0.78rem; font-weight:600; color:var(--muted);}
-  .didi-input-wrap{display:flex; gap:6px; align-items:center;}
-  .didi-input-wrap input[type=text], .didi-input-wrap textarea, .didi-input-wrap select{flex:1; margin:0;}
-  .copy-btn{padding:7px 10px; font-size:0.75rem; white-space:nowrap; display:flex; align-items:center; gap:4px; flex-shrink:0; background:var(--panel-2); border:1px solid var(--border); border-radius:7px; cursor:pointer;}
-  .copy-btn:hover{border-color:var(--accent); color:var(--accent);}
-  .ai-btn-inline{padding:7px 9px; font-size:0.75rem; background:var(--accent-soft); color:var(--accent-ink); border:1px solid var(--accent); border-radius:7px; cursor:pointer; white-space:nowrap;}
-  .ai-btn-inline:hover{filter:brightness(1.05);}
-  .didi-photo-section{display:flex; gap:16px; align-items:flex-start; margin:10px 0;}
-  .didi-photo-box{width:130px; height:130px; border:1px dashed var(--border); border-radius:10px; overflow:hidden; background:var(--panel-2); display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; position:relative; flex-shrink:0;}
-  .didi-photo-box img{width:100%; height:100%; object-fit:cover;}
-  .didi-photo-box.empty{color:var(--muted); font-size:0.72rem; padding:8px;}
-  .didi-photo-meta{flex:1; display:flex; flex-direction:column; gap:6px; font-size:0.76rem; color:var(--muted);}
-  .didi-photo-meta p{margin:0; line-height:1.4;}
-  .didi-footer-nav{display:flex; justify-content:space-between; align-items:center; gap:8px; border-top:1px solid var(--border); padding-top:14px; margin-top:18px; flex-wrap:wrap;}
-  .badge-db{background:#1E6F6322; color:var(--teal); font-size:0.68rem; font-weight:600; padding:2px 7px; border-radius:6px; border:1px solid var(--teal);}
+  .toast{position:fixed; bottom:18px; left:50%; transform:translateX(-50%); background:var(--text); color:var(--bg); padding:9px 16px; border-radius:8px; font-size:0.8rem; opacity:0; pointer-events:none; transition:0.2s;}
+  .toast.show{opacity:1;}
 </style>
-
-<script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-storage-compat.js"></script>
-
 </head>
 <body>
 
 <div class="shell">
   <aside class="sidebar">
-    <div class="brand">📦 Panel de catálogo</div>
-
-    <div class="navlist" id="navlist">
-      <button data-view="resumen" class="active">Resumen <span class="count" id="navCountResumen">–</span></button>
-      <button data-view="catalogo">Catálogo <span class="count" id="navCountCatalogo">0</span></button>
-      <button data-view="comparar">Comparar Rappi <span class="count" id="navCountComparar">–</span></button>
-    </div>
+    <div class="brand">📦 Panel de Catálogo</div>
 
     <div class="side-block">
-      <h3>1 · Excel con SKU</h3>
+      <h3>1 · Archivo Excel / CSV</h3>
       <label class="file-drop">
         <input type="file" id="excelInput" accept=".xlsx,.xls,.csv">
-        📄 Subir Excel / CSV
+        📄 Cargar Excel
         <span class="fname" id="excelName"></span>
       </label>
       <div id="excelCols" style="display:none;">
-        <label class="field-label" style="color:#9EA19B;">Columna del SKU</label>
+        <label class="field-label">Columna SKU</label>
         <select id="skuCol"></select>
-        <label class="field-label" style="color:#9EA19B; margin-top:6px;">Columna del Nombre</label>
+        <label class="field-label">Columna Nombre</label>
         <select id="nameCol"></select>
-        <label class="field-label" style="color:#9EA19B; margin-top:6px;">Columna del Precio</label>
+        <label class="field-label">Columna Precio</label>
         <select id="priceCol"></select>
-        <label class="field-label" style="color:#9EA19B; margin-top:6px;">Columna de Categoría</label>
-        <select id="catColSel"></select>
       </div>
     </div>
 
     <div class="side-block">
       <h3>2 · Fotos</h3>
-      <p class="hint">El nombre del archivo (número) = SKU.</p>
+      <p class="hint">El nombre de la foto debe ser igual al SKU.</p>
       <label class="file-drop">
         <input type="file" id="photosInput" accept="image/*" multiple>
-        🖼️ Subir fotos
+        🖼️ Cargar Fotos
         <span class="fname" id="photosName"></span>
       </label>
     </div>
-
-    <div class="side-block">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h3 style="margin:0;">🔥 Base de Datos Firebase</h3>
-        <span class="badge-db" id="dbBadge" style="background:#FFA00022; color:#FFA000; border-color:#FFA000;">Nube Google</span>
-      </div>
-      <p class="hint" id="dbHint">Conectado a Firebase en la nube. Todo se guarda automáticamente 24/7 y se sincroniza en tiempo real.</p>
-      <button class="wide primary" id="btnSyncFb" style="font-size:0.75rem;">☁️ Sincronizar con Firebase</button>
-      <button class="wide" id="btnClearDb" style="color:var(--danger); border-color:var(--border); font-size:0.72rem; margin-top:2px;">🗑️ Limpiar BD / Nuevo catálogo</button>
-    </div>
-
-    <div class="side-block">
-      <h3>✨ IA (Títulos y Descripciones)</h3>
-      <button class="wide primary" id="btnImproveAll">✨ Mejorar títulos y descripciones</button>
-      <button class="wide" id="btnClassify">🏷️ Clasificar categorías</button>
-      <button class="wide" id="btnOpenAiConfig" style="font-size:0.72rem;">⚙️ Configurar API Key (Opcional)</button>
-      <p class="hint" id="iaHint" style="color:var(--teal);">Listo para usar. Utiliza optimización inteligente local para Didi Food (o tu API Key de Gemini/OpenAI si la configuras).</p>
-    </div>
-
-    <div class="side-block">
-      <h3>Exportar</h3>
-      <button class="wide primary" id="btnExportCsv" disabled>CSV del catálogo</button>
-      <button class="wide" id="btnExportXlsx" disabled>Excel (.xlsx) del catálogo</button>
-      <button class="wide danger" id="btnExportMissingSide" disabled>⚠️ Excel faltantes de foto (<span id="sideMissingCount">0</span>)</button>
-      <button class="wide" id="btnExportZip" disabled>Fotos en .zip</button>
-      <label class="toggle-line"><input type="checkbox" id="optimizeToggle" checked> Optimizar fotos (cuadradas, máx. 1080px) al descargar</label>
-    </div>
-
-    <p class="note">Base de datos local en tu equipo (IndexedDB). El Excel y las fotos se guardan en tu navegador sin subirse a ningún servidor externo.</p>
   </aside>
 
   <div class="main-col">
     <div class="topbar">
-      <div>
-        <h1 id="topbarTitle">Resumen</h1>
-        <p id="topbarSubtitle">Sube tu Excel y tus fotos para ver el estado de tu catálogo.</p>
-      </div>
+      <h1>Resumen de Productos</h1>
     </div>
 
     <div class="content">
+      <div class="cards-row">
+        <div class="stat-card"><div class="num" id="statTotal">0</div><div class="lbl">Total Productos</div></div>
+        <div class="stat-card"><div class="num" id="statConFoto" style="color:var(--teal);">0</div><div class="lbl">Con foto</div></div>
+        <div class="stat-card"><div class="num" id="statSinFoto" style="color:var(--danger);">0</div><div class="lbl">Sin foto</div></div>
+      </div>
 
-      <!-- RESUMEN -->
-      <section class="view active" id="view-resumen">
-        <div id="dupWarning"></div>
-
-        <div class="progress-wrap">
-          <div class="row"><span>Fotos listas</span><span id="progressLabel">0 / 0</span></div>
-          <div class="progress-bar"><div id="progressBar" style="width:0%"></div></div>
-        </div>
-
-        <div class="cards-row">
-          <div class="stat-card"><div class="num" id="statTotal">0</div><div class="lbl">Productos</div></div>
-          <div class="stat-card" style="border-color:var(--teal);"><div class="num" id="statConFoto" style="color:var(--teal);">0</div><div class="lbl">Con foto lista</div></div>
-          <div class="stat-card warn"><div class="num" id="statSinFoto">0</div><div class="lbl">Sin foto (faltantes)</div></div>
-          <div class="stat-card"><div class="num" id="statOrfanas">0</div><div class="lbl">Fotos sin usar</div></div>
-          <div class="stat-card"><div class="num" id="statRevisados">0</div><div class="lbl">Revisados</div></div>
-        </div>
-
-        <div class="two-col">
-          <div class="panel-box">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
-              <h2 style="margin:0;">Pendientes de foto (<span id="boxMissingCount">0</span>)</h2>
-              <button class="danger" id="btnExportMissingBox" disabled style="font-size:0.75rem; padding:5px 10px;">📥 Exportar faltantes a Excel</button>
-            </div>
-            <div id="pendingList"><p class="empty-mini">Sube un Excel para ver esta lista.</p></div>
-          </div>
-          <div class="panel-box">
-            <h2 style="margin:0 0 10px;">Fotos sin usar (<span id="boxOrphanCount">0</span>)</h2>
-            <div id="orphanList"><p class="empty-mini">Sube fotos para ver esta lista.</p></div>
-          </div>
-        </div>
-      </section>
-
-      <!-- CATALOGO -->
-      <section class="view" id="view-catalogo">
-        <div class="toolbar">
-          <input type="text" id="search" placeholder="Buscar por SKU, nombre, categoría…">
-          <div class="chip-row" id="filterChips">
-            <span class="chip active" data-filter="todos">Todos (<b id="chipCountTodos">0</b>)</span>
-            <span class="chip" data-filter="con">Con foto (<b id="chipCountCon">0</b>)</span>
-            <span class="chip" data-filter="sin">Sin foto (<b id="chipCountSin">0</b>)</span>
-          </div>
-          <select id="estadoSelect">
-            <option value="todos">Todos los estados</option>
-            <option value="revisado">Revisados</option>
-            <option value="pendiente">Pendientes</option>
-          </select>
-          <select id="categoriaSelect">
-            <option value="todas">Todas las categorías</option>
-          </select>
-          <select id="sortSelect">
-            <option value="sku">Ordenar: SKU</option>
-            <option value="nombre">Ordenar: Nombre</option>
-            <option value="precio">Ordenar: Precio</option>
-            <option value="sinfoto">Ordenar: Sin foto primero</option>
-          </select>
-        </div>
-
-        <div class="bulkbar" id="bulkBar">
-          <span><b id="bulkCount">0</b> seleccionados</span>
-          <div class="spacer"></div>
-          <button id="bulkImprove">Mejorar texto (lote)</button>
-          <button id="bulkCopy">Copiar descripciones</button>
-          <button id="bulkExport">Exportar seleccionados (CSV)</button>
-          <button id="bulkClear">Quitar selección</button>
-        </div>
-
-        <div id="gridWrap">
-          <div class="empty">Sube tu Excel para empezar a armar las fichas de producto.</div>
-        </div>
-      </section>
-
-      <!-- COMPARAR -->
-      <section class="view" id="view-comparar">
-        <div class="panel-box">
-          <h2>Comparar con tu catálogo de Rappi</h2>
-          <p class="hint" style="color:var(--muted); font-size:0.8rem;">No puedo conectarme directamente a tu tienda Rappi desde aquí. Exporta el listado de SKUs desde tu panel de Rappi a Excel/CSV y lo comparo contra este catálogo.</p>
-          <label class="file-drop" style="border-color:var(--border); color:var(--muted); background:var(--panel-2); max-width:320px;">
-            <input type="file" id="rappiInput" accept=".xlsx,.xls,.csv">
-            🔁 Subir Excel de Rappi
-            <span class="fname" id="rappiName"></span>
-          </label>
-          <div id="rappiColWrap" style="display:none; max-width:280px;">
-            <label class="field-label">Columna con el SKU (Rappi)</label>
-            <select id="rappiCol"></select>
-          </div>
-          <div id="compareResult"></div>
-        </div>
-      </section>
-
+      <div class="grid" id="catalogGrid">
+        <p style="color:var(--muted);">Carga un archivo Excel para mostrar el catálogo.</p>
+      </div>
     </div>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
-<!-- MODAL SELECTOR DE FOTO -->
-<div class="modal-overlay" id="photoPickerOverlay">
-  <div class="modal-box" style="max-width:700px; width:95vw;">
-    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:8px;">
-      <h2 style="margin:0; font-size:1rem;" id="photoPickerTitle">Asignar foto</h2>
-      <button id="photoPickerClose" style="font-size:1.1rem; padding:4px 10px;">✕</button>
-    </div>
-    <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; align-items:center;">
-      <input type="text" id="photoPickerSearch" placeholder="Buscar foto por nombre…" style="flex:1; min-width:160px; padding:7px 10px; font-size:0.82rem;">
-      <label class="file-drop" style="flex-shrink:0; border-radius:8px; padding:8px 14px; font-size:0.78rem; margin:0; border:1px dashed var(--border); cursor:pointer; background:var(--panel-2); color:var(--text);">
-        <input type="file" id="photoPickerUpload" accept="image/*" multiple>
-        ➕ Subir foto nueva
-      </label>
-    </div>
-    <p style="font-size:0.74rem; color:var(--muted); margin:0 0 10px;">Haz clic en una foto para asignarla al producto. Las fotos <span style="color:var(--danger); font-weight:600;">rojas</span> no están asignadas a ningún producto.</p>
-    <div id="photoPickerGrid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:10px; max-height:55vh; overflow-y:auto; padding:2px;"></div>
-  </div>
-</div>
-
-<div class="modal-overlay" id="editorOverlay">
-  <div class="modal-box">
-    <h2 id="editorTitle">Editar foto</h2>
-    <div class="editor-canvas-wrap" id="editorCanvasWrap">
-      <canvas id="editorCanvas" width="600" height="600"></canvas>
-    </div>
-    <div class="editor-row">
-      <label>Zoom / recorte</label>
-      <input type="range" id="editorZoom" min="1" max="3" step="0.01" value="1">
-    </div>
-    <div class="editor-row">
-      <label>Brillo</label>
-      <input type="range" id="editorBrightness" min="60" max="150" step="1" value="100">
-    </div>
-    <div class="editor-row">
-      <label>Contraste</label>
-      <input type="range" id="editorContrast" min="60" max="150" step="1" value="100">
-    </div>
-    <div class="editor-row">
-      <label style="display:flex; align-items:center; gap:6px; color:var(--text); font-size:0.82rem;">
-        <input type="checkbox" id="editorWhiteBg"> Rellenar fondo transparente con blanco
-      </label>
-      <p style="margin:4px 0 0; font-size:0.7rem; color:var(--muted);">Arrastra la foto para moverla dentro del cuadro. El fondo a cuadros indica transparencia (PNG); si tu foto ya tiene fondo blanco sólido, no necesitas marcar esta opción.</p>
-    </div>
-    <div class="editor-actions">
-      <button id="editorCancel">Cancelar</button>
-      <button class="primary" id="editorSave">Guardar</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL VENTANA DE PRODUCTO ESTILO DIDI FOOD -->
-<div class="modal-overlay" id="didiModal">
-  <div class="modal-box wide-modal">
-    <div class="didi-header">
-      <h2><span>🍽️</span> Ficha de artículo — Didi Food</h2>
-      <button class="close-btn" id="didiCloseBtn" title="Cerrar (Esc)">✕</button>
-    </div>
-
-    <div class="didi-section-title">
-      <span>Información básica</span>
-      <button class="ai-btn-inline" id="didiImproveAllBtn">✨ Mejorar todo con IA</button>
-    </div>
-
-    <div class="didi-form-grid">
-      <!-- Código de barras / SKU -->
-      <div class="didi-field">
-        <label>Código de barras del artículo / SKU</label>
-        <div class="didi-input-wrap">
-          <input type="text" id="didiSku" placeholder="Código de barras o SKU">
-          <button class="copy-btn" data-target="didiSku">📋 Copiar</button>
-        </div>
-      </div>
-
-      <!-- Nombre del artículo -->
-      <div class="didi-field">
-        <label>Nombre del artículo</label>
-        <div class="didi-input-wrap">
-          <input type="text" id="didiNombre" placeholder="Nombre comercial del producto">
-          <button class="ai-btn-inline" id="didiImproveTitleBtn">✨ Mejorar</button>
-          <button class="copy-btn" data-target="didiNombre">📋 Copiar</button>
-        </div>
-      </div>
-
-      <!-- Agregar / Ver foto -->
-      <div class="didi-field">
-        <label>Foto del artículo (Requisitos: JPG, PNG, al menos 150x150)</label>
-        <div class="didi-photo-section">
-          <div class="didi-photo-box" id="didiPhotoBox">
-            <span class="empty">Sin foto</span>
-          </div>
-          <div class="didi-photo-meta">
-            <p id="didiPhotoStatus" style="font-weight:600;">Estado: Sin foto asignada</p>
-            <p style="font-size:0.7rem;">Puedes cambiar o editar la imagen aquí mismo para que cumpla los requisitos de Didi Food.</p>
-            <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:4px;">
-              <label class="copy-btn" style="cursor:pointer;">
-                📷 Subir foto
-                <input type="file" id="didiPhotoInput" accept="image/*" style="display:none;">
-              </label>
-              <button class="copy-btn" id="didiEditPhotoBtn">✏️ Editar foto</button>
-              <button class="copy-btn" id="didiDownloadPhotoBtn">📥 Descargar foto</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Descripción -->
-      <div class="didi-field">
-        <label>Descripción (Describe los ingredientes, métodos de preparación, etc.)</label>
-        <div class="didi-input-wrap" style="align-items:flex-start;">
-          <textarea id="didiDesc" rows="3" placeholder="Descripción atractiva para los clientes de Didi Food"></textarea>
-          <div style="display:flex; flex-direction:column; gap:4px;">
-            <button class="ai-btn-inline" id="didiImproveDescBtn">✨ Mejorar</button>
-            <button class="copy-btn" data-target="didiDesc">📋 Copiar</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Identificación adicional -->
-      <div class="didi-field">
-        <label>Identificación adicional (Nombre original del Excel)</label>
-        <div class="didi-input-wrap">
-          <input type="text" id="didiSkuOrig" placeholder="Identificación adicional">
-          <button class="copy-btn" data-target="didiSkuOrig">📋 Copiar</button>
-        </div>
-      </div>
-
-      <!-- Precio y Stock -->
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-        <div class="didi-field">
-          <label>Establece el precio ($)</label>
-          <div class="didi-input-wrap">
-            <input type="text" id="didiPrecio" placeholder="0">
-            <button class="copy-btn" data-target="didiPrecio">📋 Copiar</button>
-          </div>
-        </div>
-        <div class="didi-field">
-          <label>Cantidad disponible (Stock)</label>
-          <div class="didi-input-wrap">
-            <input type="text" id="didiStock" placeholder="Ilimitado o cantidad">
-            <button class="copy-btn" data-target="didiStock">📋 Copiar</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Categoría definida por la tienda -->
-      <div class="didi-field">
-        <label>Categoría definida por la tienda</label>
-        <div class="didi-input-wrap">
-          <input type="text" id="didiCategoria" list="didiCatList" placeholder="Ej: Bebidas, Snacks, Abarrotes...">
-          <datalist id="didiCatList"></datalist>
-          <button class="copy-btn" data-target="didiCategoria">📋 Copiar</button>
-        </div>
-      </div>
-
-      <!-- Más información -->
-      <div class="didi-section-title">Más información</div>
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-        <div class="didi-field">
-          <label>Peso (g)</label>
-          <div class="didi-input-wrap">
-            <input type="text" id="didiPeso" placeholder="Ej: 500">
-            <button class="copy-btn" data-target="didiPeso">📋</button>
-          </div>
-        </div>
-        <div class="didi-field">
-          <label>Volumen (ml)</label>
-          <div class="didi-input-wrap">
-            <input type="text" id="didiVolumen" placeholder="Ej: 350">
-            <button class="copy-btn" data-target="didiVolumen">📋</button>
-          </div>
-        </div>
-      </div>
-
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-        <div class="didi-field">
-          <label>Condición de almacenamiento</label>
-          <select id="didiAlmacenamiento">
-            <option value="Ambiente">Ambiente</option>
-            <option value="Refrigerado">Refrigerado</option>
-            <option value="Congelado">Congelado</option>
-          </select>
-        </div>
-        <div class="didi-field">
-          <label>Especificaciones del paquete</label>
-          <input type="text" id="didiEspecificaciones" placeholder="Ej: 1 Unidad / Caja">
-        </div>
-      </div>
-    </div>
-
-    <!-- Navegación inferior -->
-    <div class="didi-footer-nav">
-      <div style="display:flex; gap:6px;">
-        <button id="didiPrevBtn">⬅ Anterior</button>
-        <button id="didiNextBtn">Siguiente ➡</button>
-        <span id="didiProductCounter" style="align-self:center; font-size:0.75rem; color:var(--muted); font-family:var(--mono); margin-left:4px;">1 / 1</span>
-      </div>
-      <div style="display:flex; gap:6px;">
-        <button id="didiCopyAllBtn" class="copy-btn" style="border-color:var(--accent); color:var(--accent);">📋 Copiar ficha para Didi</button>
-        <button id="didiSaveBtn" class="primary">💾 Guardar cambios</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL CONFIGURACION IA -->
-<div class="modal-overlay" id="aiConfigModal">
-  <div class="modal-box">
-    <div class="didi-header">
-      <h2>⚙️ Configuración de IA</h2>
-      <button class="close-btn" id="aiConfigCloseBtn">✕</button>
-    </div>
-    <p style="font-size:0.78rem; color:var(--muted); line-height:1.4;">
-      Por defecto, el panel usa un <b>motor inteligente local optimizado para Didi Food</b> que funciona sin internet, gratis y sin límites en tu PC.
-    </p>
-    <div class="didi-field" style="margin-top:10px;">
-      <label>Modo de IA</label>
-      <select id="aiProviderSelect">
-        <option value="local">Motor Inteligente Local (Gratis, offline, instantáneo)</option>
-        <option value="gemini">Google Gemini (Requiere API Key gratuita)</option>
-        <option value="openai">OpenAI ChatGPT (Requiere API Key)</option>
-      </select>
-    </div>
-    <div class="didi-field" id="apiKeyWrap" style="display:none; margin-top:10px;">
-      <label>API Key</label>
-      <input type="password" id="aiApiKey" placeholder="Pega tu clave aquí (se guarda solo en tu PC)">
-    </div>
-    <div class="editor-actions" style="margin-top:16px;">
-      <button id="aiConfigCancelBtn">Cancelar</button>
-      <button class="primary" id="aiConfigSaveBtn">Guardar</button>
-    </div>
-  </div>
-</div>
-
 <script>
 (function(){
   "use strict";
 
-  // ---------- state ----------
-  let excelRows = [], excelHeaders = [], skuColIndex = -1, rawExcelAOA = [];
-  let nameColIndex = -1, priceColIndex = -1, catColIndex = -1;
-  let images = [];
+  let excelRows = [], excelHeaders = [];
+  let skuColIndex = 0, nameColIndex = 1, priceColIndex = 2;
+  let loadedImages = new Map();
   let items = [];
-  let manualAssign = new Map();
-  let manualImages = new Map();
-  let selected = new Set();
-  let currentFilter = "todos", estadoFilter = "todos", categoriaFiltro = "todas", sortBy = "sku", searchTerm = "";
-  let sampleCap = null, downloadsCap = null;
-  let duplicateSkus = [];
-
-  const NOTES_KEY = "catalogo_panel_notas_v1";
-  function loadNotes(){ try{ return JSON.parse(localStorage.getItem(NOTES_KEY) || "{}"); }catch(e){ return {}; } }
-  function saveNotes(n){ localStorage.setItem(NOTES_KEY, JSON.stringify(n)); }
-  let notes = loadNotes();
-
-  // ---------- FIREBASE CLOUD DATABASE & STORAGE ----------
-  const firebaseConfig = {
-    apiKey: "AIzaSyD76rUimvOSwUeXeEViLsY3pQtTU1VA3iA",
-    authDomain: "adminproduct-1017d.firebaseapp.com",
-    projectId: "adminproduct-1017d",
-    storageBucket: "adminproduct-1017d.firebasestorage.app",
-    messagingSenderId: "60815049251",
-    appId: "1:60815049251:web:75b61327597e0784506796",
-    measurementId: "G-GX6Z1994C7"
-  };
-
-  let fbApp = null, fbDb = null, fbStorage = null;
-  let isFirebaseReady = false;
-
-  try {
-    if (typeof firebase !== "undefined") {
-      // 1. Inicializar App
-      fbApp = firebase.initializeApp(firebaseConfig);
-      
-      // 2. Obtener instancia de Firestore
-      fbDb = firebase.firestore();
-      
-      // 3. Aplicar settings (solo pasa 1 objeto de configuración)
-      fbDb.settings({ 
-        experimentalForceLongPolling: true 
-      });
-
-      // 4. Inicializar Storage
-      fbStorage = firebase.storage();
-      isFirebaseReady = true;
-      console.log("Firebase inicializado correctamente.");
-    }
-  } catch (err) {
-    console.warn("Error inicializando Firebase:", err);
-  }
 
   function showToast(msg) {
     const t = document.getElementById("toast");
@@ -674,22 +151,16 @@
     setTimeout(() => t.classList.remove("show"), 2500);
   }
 
-  // ---------- LISTENERS EVENTOS DOM ----------
   document.addEventListener("DOMContentLoaded", () => {
-    // Escucha de carga de Excel
-    const excelInput = document.getElementById("excelInput");
-    if (excelInput) {
-      excelInput.addEventListener("change", handleExcelSelect);
-    }
-
-    // Escucha de fotos
-    const photosInput = document.getElementById("photosInput");
-    if (photosInput) {
-      photosInput.addEventListener("change", handlePhotosSelect);
-    }
+    document.getElementById("excelInput").addEventListener("change", handleExcel);
+    document.getElementById("photosInput").addEventListener("change", handlePhotos);
+    
+    document.getElementById("skuCol").addEventListener("change", (e) => { skuColIndex = parseInt(e.target.value); processCatalog(); });
+    document.getElementById("nameCol").addEventListener("change", (e) => { nameColIndex = parseInt(e.target.value); processCatalog(); });
+    document.getElementById("priceCol").addEventListener("change", (e) => { priceColIndex = parseInt(e.target.value); processCatalog(); });
   });
 
-  function handleExcelSelect(e) {
+  function handleExcel(e) {
     const file = e.target.files[0];
     if (!file) return;
 
@@ -700,142 +171,123 @@
       try {
         const data = new Uint8Array(evt.target.result);
         const workbook = XLSX.read(data, { type: "array" });
-        const firstSheet = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[firstSheet];
-        
-        rawExcelAOA = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-        if (rawExcelAOA.length === 0) {
-          showToast("El archivo Excel parece estar vacío.");
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rawAOA = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+        if (!rawAOA.length) {
+          showToast("El Excel está vacío");
           return;
         }
 
-        excelHeaders = rawExcelAOA[0] || [];
-        excelRows = rawExcelAOA.slice(1);
+        excelHeaders = rawAOA[0] || [];
+        excelRows = rawAOA.slice(1);
 
-        populateColumnSelectors();
-        showToast("Excel cargado. Selecciona la columna del SKU.");
+        populateSelectors();
+        processCatalog();
+        showToast("Excel cargado correctamente");
       } catch (err) {
-        console.error("Error al leer Excel:", err);
-        showToast("Error al leer el archivo Excel.");
+        console.error(err);
+        showToast("Error al procesar el Excel");
       }
     };
-
     reader.readAsArrayBuffer(file);
   }
 
-  function populateColumnSelectors() {
+  function populateSelectors() {
     const skuSel = document.getElementById("skuCol");
     const nameSel = document.getElementById("nameCol");
     const priceSel = document.getElementById("priceCol");
-    const catSel = document.getElementById("catColSel");
 
-    const selects = [skuSel, nameSel, priceSel, catSel];
-    selects.forEach(s => { if(s) s.innerHTML = ""; });
+    [skuSel, nameSel, priceSel].forEach(s => s.innerHTML = "");
 
-    excelHeaders.forEach((header, idx) => {
-      const optionText = header ? header.toString() : `Columna ${idx + 1}`;
-      selects.forEach(s => {
-        if (s) {
-          const opt = document.createElement("option");
-          opt.value = idx;
-          opt.textContent = optionText;
-          s.appendChild(opt);
-        }
+    excelHeaders.forEach((h, i) => {
+      const optText = h ? String(h) : `Columna ${i + 1}`;
+      [skuSel, nameSel, priceSel].forEach(s => {
+        const opt = document.createElement("option");
+        opt.value = i;
+        opt.textContent = optText;
+        s.appendChild(opt);
       });
     });
 
-    document.getElementById("excelCols").style.display = "block";
-    
-    // Auto-mapeo inicial si existen nombres comunes
     excelHeaders.forEach((h, i) => {
-      const nameLower = String(h).toLowerCase();
-      if (nameLower.includes("sku") || nameLower.includes("codigo") || nameLower.includes("código")) skuSel.value = i;
-      if (nameLower.includes("nombre") || nameLower.includes("producto") || nameLower.includes("descripcion")) nameSel.value = i;
-      if (nameLower.includes("precio") || nameLower.includes("price") || nameLower.includes("costo")) priceSel.value = i;
-      if (nameLower.includes("categoria") || nameLower.includes("categoría")) catSel.value = i;
+      const name = String(h).toLowerCase();
+      if (name.includes("sku") || name.includes("codigo") || name.includes("código")) skuSel.value = i;
+      if (name.includes("nombre") || name.includes("producto") || name.includes("descripcion")) nameSel.value = i;
+      if (name.includes("precio") || name.includes("price") || name.includes("costo")) priceSel.value = i;
     });
 
     skuColIndex = parseInt(skuSel.value);
-    buildCatalogItems();
+    nameColIndex = parseInt(nameSel.value);
+    priceColIndex = parseInt(priceSel.value);
+
+    document.getElementById("excelCols").style.display = "block";
   }
 
-  function buildCatalogItems() {
-    items = [];
-    excelRows.forEach((row, i) => {
-      const rawSku = row[skuColIndex];
-      if (!rawSku) return;
-
-      const sku = String(rawSku).trim();
-      const name = row[nameColIndex] ? String(row[nameColIndex]).trim() : `Producto ${sku}`;
-      const price = row[priceColIndex] ? String(row[priceColIndex]).trim() : "0";
-      const cat = row[catColIndex] ? String(row[catColIndex]).trim() : "Sin categoría";
-
-      items.push({
-        id: `item_${i}_${sku}`,
-        sku: sku,
-        nombre: name,
-        precio: price,
-        categoria: cat,
-        hasPhoto: false,
-        photoUrl: null
-      });
-    });
-
-    updateCounters();
-    showToast(`Se importaron ${items.length} productos del Excel.`);
-  }
-
-  function handlePhotosSelect(e) {
+  function handlePhotos(e) {
     const files = Array.from(e.target.files);
     if (!files.length) return;
 
-    document.getElementById("photosName").textContent = `${files.length} foto(s) seleccionadas`;
+    document.getElementById("photosName").textContent = `${files.length} fotos listas`;
 
     files.forEach(file => {
+      const cleanName = file.name.split('.')[0].trim().toLowerCase();
       const url = URL.createObjectURL(file);
-      images.push({
-        name: file.name,
-        file: file,
-        url: url
-      });
+      loadedImages.set(cleanName, url);
     });
 
-    matchPhotosWithItems();
+    processCatalog();
+    showToast("Fotos vinculadas");
   }
 
-  function matchPhotosWithItems() {
-    let matchedCount = 0;
-    items.forEach(item => {
-      const cleanSku = item.sku.toLowerCase();
-      const foundImage = images.find(img => {
-        const imageName = img.name.split('.')[0].toLowerCase();
-        return imageName === cleanSku;
-      });
+  function processCatalog() {
+    items = [];
+    let conFoto = 0;
 
-      if (foundImage) {
-        item.hasPhoto = true;
-        item.photoUrl = foundImage.url;
-        matchedCount++;
-      }
+    excelRows.forEach(row => {
+      const sku = row[skuColIndex] ? String(row[skuColIndex]).trim() : "";
+      if (!sku) return;
+
+      const nombre = row[nameColIndex] ? String(row[nameColIndex]).trim() : "Sin Nombre";
+      const precio = row[priceColIndex] ? String(row[priceColIndex]).trim() : "0";
+      
+      const imgUrl = loadedImages.get(sku.toLowerCase()) || null;
+      if (imgUrl) conFoto++;
+
+      items.push({ sku, nombre, precio, imgUrl });
     });
 
-    updateCounters();
-    showToast(`Se vinculó ${matchedCount} foto(s) por SKU.`);
-  }
-
-  function updateCounters() {
-    const total = items.length;
-    const conFoto = items.filter(i => i.hasPhoto).length;
-    const sinFoto = total - conFoto;
-
-    document.getElementById("statTotal").textContent = total;
+    document.getElementById("statTotal").textContent = items.length;
     document.getElementById("statConFoto").textContent = conFoto;
-    document.getElementById("statSinFoto").textContent = sinFoto;
-    document.getElementById("navCountCatalogo").textContent = total;
+    document.getElementById("statSinFoto").textContent = items.length - conFoto;
 
-    const progress = total > 0 ? Math.round((conFoto / total) * 100) : 0;
-    document.getElementById("progressBar").style.width = `${progress}%`;
-    document.getElementById("progressLabel").textContent = `${conFoto} / ${total}`;
+    renderGrid();
+  }
+
+  function renderGrid() {
+    const grid = document.getElementById("catalogGrid");
+    grid.innerHTML = "";
+
+    if (!items.length) {
+      grid.innerHTML = '<p style="color:var(--muted);">No hay productos para mostrar.</p>';
+      return;
+    }
+
+    items.forEach(item => {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `
+        <div class="photo">
+          ${item.imgUrl ? `<img src="${item.imgUrl}" alt="${item.sku}">` : '<span style="color:var(--muted); font-size:0.75rem;">Sin Foto</span>'}
+        </div>
+        <div class="card-body">
+          <span class="sku">${item.sku}</span>
+          <h4 class="title">${item.nombre}</h4>
+          <span class="price">$ ${item.precio}</span>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
   }
 
 })();

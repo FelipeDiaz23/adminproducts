@@ -171,7 +171,6 @@
   .editor-actions{display:flex; gap:8px; margin-top:16px;}
   .editor-actions button{flex:1;}
 
-  /* Estilos específicos Modal Didi Food */
   .didi-header{display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border); padding-bottom:12px; margin-bottom:14px;}
   .didi-header h2{margin:0; font-size:1.15rem; font-weight:700; display:flex; align-items:center; gap:8px;}
   .didi-header .close-btn{background:none; border:none; font-size:1.3rem; line-height:1; padding:4px 8px; cursor:pointer; color:var(--muted);}
@@ -648,13 +647,13 @@
   try {
     if (typeof firebase !== "undefined") {
       fbApp = firebase.initializeApp(firebaseConfig);
-      fbDb = firebase.firestore();
       
-      // Pasar { merge: true } evita la advertencia de sobreescritura de host
+      // Pasar { merge: true } como segundo argumento en settings()
+      fbDb = firebase.firestore();
       fbDb.settings({ 
         experimentalForceLongPolling: true 
       }, { merge: true });
-      
+
       fbStorage = firebase.storage();
       isFirebaseReady = true;
       console.log("Firebase inicializado correctamente sin advertencias.");

@@ -150,7 +150,7 @@
   .compare-col h3 button{font-size:0.65rem; padding:3px 7px;}
   .compare-col ul{margin:0; padding-left:16px; max-height:220px; overflow-y:auto; font-family:var(--mono); font-size:0.72rem; background:var(--panel-2); border-radius:7px; padding:8px 8px 8px 22px;}
   .compare-col li{margin-bottom:2px;}
-  .warn-banner{background:var(--danger-soft); border:1px solid var(--danger); color:var(--danger); border-radius:9px; padding:10px 14px; font-size:0.8rem; margin-bottom:16px;}
+  .warn-banner{background:var(--danger-soft); border:1px solid var(--danger); color:var(--danger); border-radius:99px; padding:10px 14px; font-size:0.8rem; margin-bottom:16px;}
   .toast{position:fixed; bottom:18px; left:50%; transform:translateX(-50%); background:var(--text); color:var(--bg); padding:9px 16px; border-radius:8px; font-size:0.8rem; opacity:0; pointer-events:none; transition:opacity .2s, transform .2s; z-index:50;}
   .toast.show{opacity:1; transform:translateX(-50%) translateY(-4px);}
   @media (max-width:760px){ .shell{flex-direction:column;} .sidebar{width:100%; height:auto; position:static;} }
@@ -242,7 +242,7 @@
       </label>
     </div>
 
-        <div class="side-block">
+    <div class="side-block">
       <div style="display:flex; justify-content:space-between; align-items:center;">
         <h3 style="margin:0;">🔥 Base de Datos Firebase</h3>
         <span class="badge-db" id="dbBadge" style="background:#FFA00022; color:#FFA000; border-color:#FFA000;">Nube Google</span>
@@ -616,17 +616,16 @@
 
   // ---------- state ----------
   let excelRows = [], excelHeaders = [], skuColIndex = -1, rawExcelAOA = [];
-  let nameColIndex = -1, priceColIndex = -1, catColIndex = -1; // columnas mapeadas por usuario
+  let nameColIndex = -1, priceColIndex = -1, catColIndex = -1;
   let images = [];
   let items = [];
-  let manualAssign = new Map(); // skuNorm -> imageBase (asignación desde fotos huérfanas)
-  let manualImages = new Map(); // skuNorm -> {file,name,url} (foto propia adjuntada por producto)
-  let selected = new Set(); // sku
+  let manualAssign = new Map();
+  let manualImages = new Map();
+  let selected = new Set();
   let currentFilter = "todos", estadoFilter = "todos", categoriaFiltro = "todas", sortBy = "sku", searchTerm = "";
   let sampleCap = null, downloadsCap = null;
   let duplicateSkus = [];
 
-  // Notas/ediciones manuales guardadas en localStorage
   const NOTES_KEY = "catalogo_panel_notas_v1";
   function loadNotes(){ try{ return JSON.parse(localStorage.getItem(NOTES_KEY) || "{}"); }catch(e){ return {}; } }
   function saveNotes(n){ localStorage.setItem(NOTES_KEY, JSON.stringify(n)); }
@@ -650,1989 +649,193 @@
     if (typeof firebase !== "undefined") {
       fbApp = firebase.initializeApp(firebaseConfig);
       fbDb = firebase.firestore();
-      // Algunos antivirus/firewalls/redes corporativas bloquean el canal
-      // de conexión en tiempo real (WebSocket) que usa Firestore por defecto,
-      // aunque las peticiones HTTPS normales (como subir a Storage) sí pasen.
-      // Esto fuerza a Firestore a usar "long polling" clásico, mucho más
-      // compatible con ese tipo de redes, y evita el error
-      // "client is offline" en esos casos.
-      fbDb.settings({ experimentalForceLongPolling: true, merge: true });
+      
+      // FIX del error experimentalForceLongPolling y experimentalAutoDetectLongPolling
+      // Usar settings sin duplicar configuraciones de transportes incompatibles.
+      fbDb.settings({ experimentalForceLongPolling: true });
+      
       fbStorage = firebase.storage();
       isFirebaseReady = true;
-      console.log("🔥 Firebase conectado exitosamente a:", firebaseConfig.projectId);
+      console.log("Firebase initialized correctly.");
     }
-  } catch(e) {
-    console.warn("Error iniciando Firebase:", e);
+  } catch (err) {
+    console.warn("Error inicializando Firebase:", err);
   }
 
-  // Guardar catálogo en Firestore
-  function sanitizeForFirestore(obj) {
-    if (obj === undefined) return "";
-    if (obj === null) return "";
-    if (Array.isArray(obj)) return obj.map(sanitizeForFirestore);
-    if (typeof obj === "object") {
-      const clean = {};
-      for (const [k, v] of Object.entries(obj)) {
-        if (k !== undefined && k !== null) {
-          const safeKey = String(k).trim().replace(/[\.\/\#\$\[\]]/g, "_") || "campo";
-          clean[safeKey] = sanitizeForFirestore(v);
-        }
-      }
-      return clean;
-    }
-    return obj;
+  function showToast(msg) {
+    const t = document.getElementById("toast");
+    if (!t) return;
+    t.textContent = msg;
+    t.classList.add("show");
+    setTimeout(() => t.classList.remove("show"), 2500);
   }
 
-  async function fbSaveAll() {
-    if (!isFirebaseReady) {
-      console.warn("Firebase no está inicializado aún.");
-      toast("Firebase no está listo aún");
-      return;
-    }
-    if (!items.length) {
-      toast("No hay productos cargados para guardar");
-      return;
+  // ---------- LISTENERS EVENTOS DOM ----------
+  document.addEventListener("DOMContentLoaded", () => {
+    // Escucha de carga de Excel
+    const excelInput = document.getElementById("excelInput");
+    if (excelInput) {
+      excelInput.addEventListener("change", handleExcelSelect);
     }
 
-    const syncBtn = $("#btnSyncFb");
-    if (syncBtn) {
-      syncBtn.disabled = true;
-      syncBtn.textContent = "Guardando en Firebase...";
+    // Escucha de fotos
+    const photosInput = document.getElementById("photosInput");
+    if (photosInput) {
+      photosInput.addEventListener("change", handlePhotosSelect);
     }
+  });
 
-    try {
-      console.log("🔥 Guardando en Firebase Firestore:", items.length, "productos...");
-      const cleanHeaders = (excelHeaders || []).map(h => String(h || "").trim());
+  function handleExcelSelect(e) {
+    const file = e.target.files[0];
+    if (!file) return;
 
-      // Guardamos el Excel crudo completo (rawExcelAOA) partido en trozos, para
-      // que la app siempre pueda reconstruir el catálogo completo desde acá,
-      // sin depender de reconstruirlo producto por producto. Un solo documento
-      // de Firestore no puede pasar de ~1MB, así que lo partimos.
-      const rawJson = JSON.stringify(rawExcelAOA || []);
-      const CHUNK_CHARS = 700000;
-      const rawChunks = [];
-      for (let i = 0; i < rawJson.length; i += CHUNK_CHARS) {
-        rawChunks.push(rawJson.slice(i, i + CHUNK_CHARS));
-      }
-      if (rawChunks.length === 0) rawChunks.push("[]");
-
-      await fbDb.collection("catalog").doc("meta").set({
-        excelHeaders: cleanHeaders,
-        skuColIndex: skuColIndex >= 0 ? skuColIndex : 0,
-        nameColIndex: nameColIndex !== undefined ? nameColIndex : -1,
-        priceColIndex: priceColIndex !== undefined ? priceColIndex : -1,
-        catColIndex: catColIndex !== undefined ? catColIndex : -1,
-        notes: sanitizeForFirestore(notes || {}),
-        itemCount: items.length,
-        rawChunkCount: rawChunks.length,
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      }, { merge: true });
-
-      // Sube cada trozo del Excel crudo a su propio documento
-      for (let i = 0; i < rawChunks.length; i++) {
-        await fbDb.collection("catalogRaw").doc("chunk_" + i).set({ data: rawChunks[i] });
-      }
-      // Si el catálogo se redujo (menos trozos que antes), borra los sobrantes
-      try {
-        const oldChunksSnap = await fbDb.collection("catalogRaw").get();
-        const deletions = [];
-        oldChunksSnap.forEach(doc => {
-          const n = parseInt(String(doc.id).replace("chunk_", ""), 10);
-          if (!isNaN(n) && n >= rawChunks.length) deletions.push(doc.ref.delete());
-        });
-        if (deletions.length) await Promise.all(deletions);
-      } catch(e) { console.warn("No se pudieron limpiar trozos viejos del excel:", e); }
-
-      const BATCH_SIZE = 250;
-      for (let i = 0; i < items.length; i += BATCH_SIZE) {
-        const chunk = items.slice(i, i + BATCH_SIZE);
-
-        // Antes de escribir, sube a Storage cualquier foto que aún sea solo local (blob:)
-        await Promise.all(chunk.map(item => ensureItemPhotoUploaded(item)));
-
-        const batch = fbDb.batch();
-        chunk.forEach(item => {
-          const safeId = String(item.skuNorm || item.sku || "prod_" + Math.random()).replace(/[\.\/\#\$\[\]]/g, "_");
-          const docRef = fbDb.collection("products").doc(safeId);
-          const imgUrl = (item.image && item.image.url && !item.image.url.startsWith("blob:")) ? item.image.url : (item.imageUrl || "");
-          const imgName = (item.image && item.image.name) ? item.image.name : (item.imageName || "");
-
-          batch.set(docRef, {
-            sku: String(item.sku || ""),
-            skuNorm: String(item.skuNorm || ""),
-            title: String(item.title || ""),
-            desc: String(item.desc || ""),
-            aiCategory: item.aiCategory ? String(item.aiCategory) : null,
-            revisado: Boolean(item.revisado),
-            imageUrl: String(imgUrl || ""),
-            imageName: String(imgName || ""),
-            row: sanitizeForFirestore(item.row || {})
-          }, { merge: true });
-        });
-        await batch.commit();
-      }
-
-      console.log("✅ ¡Catálogo guardado en Firebase con éxito!");
-      toast("🔥 ¡" + items.length + " productos guardados en Firebase!");
-      const b = $("#dbBadge");
-      if (b) b.textContent = items.length + " en Nube";
-    } catch(err) {
-      console.error("❌ Error en fbSaveAll:", err);
-      if (err && err.code === "permission-denied") {
-        alert("⚠️ Firebase rechazó la escritura por Reglas de Seguridad.\n\nVe a console.firebase.google.com > Firestore Database > pestaña Reglas y pon:\nallow read, write: if true;\n\nLuego dale Publicar.");
-      } else {
-        if (err && (String(err.code).includes("not-found") || String(err.message).toLowerCase().includes("not found") || String(err).includes("404"))) {
-        alert("⚠️ La Base de Datos Firestore aún NO ha sido creada en tu Firebase.\n\nPasos para activarla (toma 30 segundos):\n1. Entra a console.firebase.google.com\n2. Entra a tu proyecto 'adminproduct-1017d'\n3. Ve a 'Firestore Database' en el menú izquierdo\n4. Haz clic en el botón 'Crear base de datos'\n5. Elige 'Modo de prueba' y dale Habilitar.");
-      } else {
-        alert("Error de Firebase: " + (err.message || err));
-      }
-      }
-    } finally {
-      if (syncBtn) {
-        syncBtn.disabled = false;
-        syncBtn.textContent = "☁️ Sincronizar con Firebase";
-      }
-    }
-  }
-
-  // Cargar catálogo desde Firestore
-  async function fbLoadAll() {
-    if (!isFirebaseReady) return false;
-    try {
-      const metaDoc = await fbDb.collection("catalog").doc("meta").get();
-      if (!metaDoc.exists) return false;
-      const meta = metaDoc.data();
-      excelHeaders = meta.excelHeaders || [];
-      skuColIndex = meta.skuColIndex !== undefined ? meta.skuColIndex : 0;
-      nameColIndex = meta.nameColIndex !== undefined ? meta.nameColIndex : -1;
-      priceColIndex = meta.priceColIndex !== undefined ? meta.priceColIndex : -1;
-      catColIndex = meta.catColIndex !== undefined ? meta.catColIndex : -1;
-      if (meta.notes) {
-        notes = meta.notes;
-        saveNotes(notes);
-      }
-
-      // Fuente principal: el Excel crudo completo, guardado en trozos.
-      // Así el catálogo se reconstruye siempre igual, sin depender de que
-      // cada producto se haya guardado bien por separado.
-      rawExcelAOA = [];
-      const chunkCount = meta.rawChunkCount || 0;
-      if (chunkCount > 0) {
-        try {
-          const chunkDocs = await Promise.all(
-            Array.from({length: chunkCount}, (_, i) => fbDb.collection("catalogRaw").doc("chunk_" + i).get())
-          );
-          const rawJson = chunkDocs.map(d => (d.exists ? (d.data().data || "") : "")).join("");
-          rawExcelAOA = JSON.parse(rawJson || "[]");
-        } catch(e) {
-          console.warn("No se pudo reconstruir el excel crudo desde Firestore:", e);
-          rawExcelAOA = [];
-        }
-      }
-
-      // Cargar productos de Firestore (para fotos, notas y como respaldo si no hay excel crudo)
-      const prodSnap = await fbDb.collection("products").get();
-      if (prodSnap.empty && !rawExcelAOA.length) return false;
-
-      const fbProducts = new Map();
-      prodSnap.forEach(doc => {
-        fbProducts.set(doc.id, doc.data());
-      });
-
-      if (rawExcelAOA.length) {
-        rebuildRowsFromAOA();
-      } else if (fbProducts.size > 0) {
-        excelRows = Array.from(fbProducts.values()).map(p => {
-          const obj = p.row || {};
-          obj.__sku = p.sku;
-          obj.__skuNorm = p.skuNorm;
-          obj.__skuOriginal = p.sku;
-          return obj;
-        });
-      }
-
-      fbProducts.forEach(p => {
-        if (p.imageUrl) {
-          const im = {
-            file: null,
-            name: p.imageName || (p.sku + ".jpg"),
-            base: normKey(stripExt(p.imageName || p.sku)),
-            numKey: p.sku,
-            url: p.imageUrl
-          };
-          manualImages.set(p.skuNorm, im);
-        }
-        if (p.title || p.desc || p.revisado !== undefined) {
-          notes[p.skuNorm] = {
-            title: p.title,
-            desc: p.desc,
-            revisado: p.revisado,
-            aiCategory: p.aiCategory
-          };
-        }
-      });
-
-      if (excelHeaders.length) {
-        $("#excelCols").style.display = "block";
-        populateColSelects();
-      }
-
-      rebuildItems();
-      updateDbBadge();
-      toast("🔥 Conectado a Firebase: " + items.length + " productos cargados de la nube");
-      return true;
-    } catch(e) {
-      console.warn("No se pudo cargar desde Firebase:", e);
-      return false;
-    }
-  }
-
-  // Subir foto a Firebase Storage
-  // Sube la foto a Firebase Storage y devuelve su URL pública.
-  // OJO: ya NO escribe nada en Firestore aquí — eso evita crear un producto
-  // "fantasma" que solo tenga la foto y no el nombre/fila del Excel. El único
-  // lugar que escribe productos en Firestore es fbSaveAll(), con todos los
-  // datos juntos (nombre, fila, foto) en un solo documento.
-  async function fbUploadPhoto(file, skuNorm, sku) {
-    if (!isFirebaseReady || !fbStorage || !file) return null;
-    try {
-      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
-      const safeName = (sku || skuNorm) + "." + ext;
-      const storageRef = fbStorage.ref().child("fotos/" + safeName);
-      const snapshot = await storageRef.put(file);
-      const downloadURL = await snapshot.ref.getDownloadURL();
-      console.log("Foto subida a Firebase Storage:", downloadURL);
-      return { url: downloadURL, name: file.name };
-    } catch(e) {
-      console.error("Error subiendo foto a Firebase Storage:", e);
-      return null;
-    }
-  }
-
-  // Sube a Storage cualquier foto de un item que todavía sea solo local (blob:)
-  // y deja la URL pública permanente en item.image.url para que quede en Firestore.
-  async function ensureItemPhotoUploaded(item){
-    if (!isFirebaseReady || !item || !item.image || !item.image.file) return;
-    if (item.image.url && !item.image.url.startsWith("blob:")) return; // ya subida
-    const safeId = String(item.skuNorm || item.sku || "").trim().replace(/[\.\/\#\$\[\]]/g, "_");
-    if (!safeId) return;
-    const uploaded = await fbUploadPhoto(item.image.file, safeId, item.sku);
-    if (uploaded && uploaded.url) {
-      item.image.url = uploaded.url;
-      item.imageUrl = uploaded.url;
-    }
-  }
-
-
-  const $ = (sel) => document.querySelector(sel);
-  const gridWrap = $("#gridWrap");
-  const toastEl = $("#toast");
-
-  function toast(msg){
-    toastEl.textContent = msg;
-    toastEl.classList.add("show");
-    clearTimeout(toast._t);
-    toast._t = setTimeout(()=>toastEl.classList.remove("show"), 2600);
-  }
-  function normKey(s){ return (s===undefined||s===null) ? "" : String(s).trim().toLowerCase().replace(/[^a-z0-9]/g,""); }
-  function stripExt(name){ return name.replace(/\.[^.\/]+$/,""); }
-
-  function isHeaderRow(val){
-    const norm = String(val||"").trim().toLowerCase();
-    return norm === "sku" || norm === "código" || norm === "codigo" || norm === "id" || norm === "referencia";
-  }
-
-  // Extrae solo los números después del guion bajo "_" (ej: Home4Veinte4mt_2913 -> 2913)
-  function extractSkuNumber(raw){
-    if (raw === undefined || raw === null) return "";
-    const s = String(raw).trim();
-    if (isHeaderRow(s)) return "";
-    if (s.includes("_")) {
-      const after = s.split("_").pop();
-      const match = after.match(/\d+/);
-      if (match) return match[0];
-    }
-    // Si no contiene guion bajo, buscar si contiene número
-    const digits = s.match(/\d+/);
-    return digits ? digits[0] : s;
-  }
-
-  // Guarda un archivo usando la capacidad de Claude si está disponible; si no
-  // (por ejemplo al publicar esta página en GitHub Pages u otro hosting),
-  // usa la descarga nativa del navegador para que siga funcionando igual.
-  async function saveFile(filename, data){
-    if (downloadsCap){
-      try{ await downloadsCap.save({filename, data}); return "ok"; }
-      catch(e){ if (e && e.code === "declined") return "declined"; }
-    }
-    try{
-      const blob = (data instanceof Blob) ? data : new Blob([data], {type:"application/octet-stream"});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url; a.download = filename;
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      setTimeout(()=>URL.revokeObjectURL(url), 4000);
-      return "ok";
-    }catch(e){ return "error"; }
-  }
-
-  // ---------- Base de Datos Local en tu PC (IndexedDB) ----------
-  const DB_NAME = "CatalogoDidiDB_v2";
-  const DB_VERSION = 1;
-  let dbInstance = null;
-
-  function dbOpen(){
-    return new Promise((resolve, reject) => {
-      if (dbInstance) return resolve(dbInstance);
-      const req = indexedDB.open(DB_NAME, DB_VERSION);
-      req.onupgradeneeded = (e) => {
-        const db = e.target.result;
-        if (!db.objectStoreNames.contains("products")) {
-          db.createObjectStore("products", {keyPath:"skuNorm"});
-        }
-        if (!db.objectStoreNames.contains("images")) {
-          db.createObjectStore("images", {keyPath:"key"});
-        }
-        if (!db.objectStoreNames.contains("meta")) {
-          db.createObjectStore("meta", {keyPath:"id"});
-        }
-      };
-      req.onsuccess = () => { dbInstance = req.result; resolve(dbInstance); };
-      req.onerror = () => reject(req.error);
-    });
-  }
-
-  // Guarda en Firebase con un pequeño retraso, para no disparar una escritura
-  // por cada tecla cuando el usuario edita varios campos seguidos.
-  let _fbSaveTimer = null;
-  function scheduleFbSave(){
-    if (!isFirebaseReady) return;
-    clearTimeout(_fbSaveTimer);
-    _fbSaveTimer = setTimeout(() => { fbSaveAll(); }, 1200);
-  }
-
-  async function dbSaveAll(){
-    scheduleFbSave();
-    try{
-      const db = await dbOpen();
-      const tx = db.transaction(["products", "meta"], "readwrite");
-      const prodStore = tx.objectStore("products");
-      items.forEach(it => {
-        prodStore.put({
-          sku: it.sku,
-          skuNorm: it.skuNorm,
-          title: it.title,
-          desc: it.desc,
-          aiCategory: it.aiCategory,
-          revisado: it.revisado,
-          row: it.row,
-          hasImage: !!it.image
-        });
-      });
-      const metaStore = tx.objectStore("meta");
-      metaStore.put({
-        id: "current_catalog",
-        excelHeaders: excelHeaders,
-        rawExcelAOA: rawExcelAOA,
-        skuColIndex: skuColIndex,
-        updatedAt: new Date().toISOString()
-      });
-      updateDbBadge();
-    }catch(err){
-      console.warn("Error guardando en BD local:", err);
-    }
-  }
-
-  
-  async function dbSaveImages(imgs){
-    if (imgs && imgs.length) {
-      imgs.forEach(im => {
-        if (im.file && isFirebaseReady) {
-          const skuGuess = im.numKey || im.base || "";
-          fbUploadPhoto(im.file, normKey(String(skuGuess)), skuGuess).then(res => {
-            if (res && res.url) {
-              im.url = res.url; // reemplaza la vista previa local por la URL pública permanente
-              rebuildItems();
-              scheduleFbSave();
-            }
-          });
-        }
-      });
-    }
-    try{
-      const db = await dbOpen();
-      const tx = db.transaction("images", "readwrite");
-      const store = tx.objectStore("images");
-      for (const im of imgs){
-        if (im.file){
-          store.put({
-            key: im.base,
-            name: im.name,
-            blob: im.file,
-            numKey: im.numKey
-          });
-        }
-      }
-      updateDbBadge();
-    }catch(err){
-      console.warn("Error guardando fotos en BD:", err);
-    }
-  }
-
-  async function dbLoadAll(){
-    try{
-      const db = await dbOpen();
-
-      // Helper: wrap a single IDBRequest in a Promise
-      function reqToPromise(req){
-        return new Promise((res, rej) => {
-          req.onsuccess = () => res(req.result);
-          req.onerror   = () => rej(req.error);
-        });
-      }
-
-      // ── 1. Leer meta en transacción propia ──────────────────────────────
-      const meta = await reqToPromise(
-        db.transaction(["meta"], "readonly").objectStore("meta").get("current_catalog")
-      );
-      if (!meta || !meta.excelHeaders || !meta.excelHeaders.length){
-        updateDbBadge();
-        return;
-      }
-      excelHeaders  = meta.excelHeaders;
-      rawExcelAOA   = meta.rawExcelAOA || [];
-      skuColIndex   = meta.skuColIndex !== undefined ? meta.skuColIndex : 0;
-      if ($("#excelCols")) $("#excelCols").style.display = "block";
-      populateColSelects();
-
-      // ── 2. Leer imágenes en transacción propia ───────────────────────────
-      const storedImgs = await reqToPromise(
-        db.transaction(["images"], "readonly").objectStore("images").getAll()
-      );
-      if (storedImgs && storedImgs.length){
-        images = storedImgs.map(si => ({
-          file: si.blob,
-          name: si.name,
-          base: si.key,
-          numKey: si.numKey,
-          url: URL.createObjectURL(si.blob)
-        }));
-        if ($("#photosName")) $("#photosName").textContent = `${images.length} foto(s) en BD`;
-      }
-
-      // ── 3. Leer productos en transacción propia ───────────────────────────
-      const storedProds = await reqToPromise(
-        db.transaction(["products"], "readonly").objectStore("products").getAll()
-      );
-      if (storedProds && storedProds.length){
-        rebuildRowsFromAOA();
-        storedProds.forEach(sp => {
-          notes[sp.skuNorm] = {
-            title: sp.title,
-            desc: sp.desc,
-            revisado: sp.revisado,
-            aiCategory: sp.aiCategory
-          };
-        });
-        rebuildItems();
-        toast(`Copia local cargada: ${items.length} productos (sin conexión a la nube)`);
-      }
-
-      updateDbBadge();
-    }catch(err){
-      console.warn("No se pudo cargar desde BD local:", err);
-      updateDbBadge();
-    }
-  }
-
-  async function dbClearAll(){
-    if (!confirm("¿Deseas vaciar el catálogo (en la nube y en este navegador) y empezar de cero?")) return;
-    try{
-      const db = await dbOpen();
-      const tx = db.transaction(["products", "images", "meta"], "readwrite");
-      tx.objectStore("products").clear();
-      tx.objectStore("images").clear();
-      tx.objectStore("meta").clear();
-      notes = {};
-      saveNotes(notes);
-      items = [];
-      images = [];
-      excelRows = [];
-      rawExcelAOA = [];
-      excelHeaders = [];
-      $("#excelCols").style.display = "none";
-      $("#excelName").textContent = "";
-      $("#photosName").textContent = "";
-
-      if (isFirebaseReady) {
-        try {
-          await fbDb.collection("catalog").doc("meta").delete();
-          const snap = await fbDb.collection("products").get();
-          const rawSnap = await fbDb.collection("catalogRaw").get();
-          const CHUNK = 400;
-          let batch = fbDb.batch(); let count = 0;
-          const allDocs = [...snap.docs, ...rawSnap.docs];
-          for (const doc of allDocs) {
-            batch.delete(doc.ref); count++;
-            if (count === CHUNK) { await batch.commit(); batch = fbDb.batch(); count = 0; }
-          }
-          if (count > 0) await batch.commit();
-        } catch(e){ console.warn("No se pudo vaciar el catálogo en Firebase:", e); }
-      }
-
-      rebuildItems();
-      updateDbBadge();
-      toast("Catálogo vaciado con éxito");
-    }catch(err){
-      toast("Error al limpiar el catálogo");
-    }
-  }
-
-  function updateDbBadge(){
-    const b = $("#dbBadge");
-    const enNube = isFirebaseReady;
-    if (b) b.textContent = items.length ? `${items.length} ${enNube ? "en la nube" : "en este navegador"}` : "0 guardados";
-    const h = $("#dbHint");
-    if (h) h.textContent = items.length
-      ? `Hay ${items.length} productos y ${images.length} fotos guardados ${enNube ? "en la nube (Firebase)" : "solo en este navegador"}.`
-      : (enNube
-          ? "Todo lo que subas se guarda automáticamente en la nube: cualquier persona con este enlace verá lo mismo."
-          : "Firebase no está disponible; se está guardando solo en este navegador.");
-  }
-
-  // ---------- Configuración de IA (Local vs API) ----------
-  const AI_CONFIG_KEY = "catalogo_ai_config_v1";
-  function loadAiConfig(){
-    try{ return JSON.parse(localStorage.getItem(AI_CONFIG_KEY) || '{"provider":"local","apiKey":""}'); }catch(e){ return {provider:"local", apiKey:""}; }
-  }
-  function saveAiConfig(cfg){
-    localStorage.setItem(AI_CONFIG_KEY, JSON.stringify(cfg));
-  }
-  let aiConfig = loadAiConfig();
-
-  function refreshIaButtons(){
-    $("#btnClassify").disabled = !items.length;
-    $("#btnImproveAll").disabled = !items.length;
-  }
-
-  // ---------- lectura de excel ----------
-  function guessSkuColumn(headers){
-    const patterns = [/^sku$/i, /codigo/i, /código/i, /^id$/i, /referencia/i, /^ref$/i];
-    for (const p of patterns){ const idx = headers.findIndex(h => p.test(String(h||"").trim())); if (idx !== -1) return idx; }
-    return 0;
-  }
-  function parseWorkbook(file, cb){
+    document.getElementById("excelName").textContent = file.name;
     const reader = new FileReader();
-    const isCsv = /\.csv$/i.test(file.name);
-    reader.onload = function(e){
-      try{
-        let wb;
-        if (isCsv) {
-          // Los .csv hay que decodificarlos explícitamente como texto UTF-8 antes
-          // de pasárselos a SheetJS. Si se le pasan los bytes crudos, SheetJS a
-          // veces los interpreta como Latin-1 y las tildes/ñ salen como "Ã±".
-          const bytes = new Uint8Array(e.target.result);
-          const text = new TextDecoder("utf-8").decode(bytes);
-          wb = XLSX.read(text, {type:"string"});
-        } else {
-          const data = new Uint8Array(e.target.result);
-          wb = XLSX.read(data, {type:"array"});
+
+    reader.onload = function(evt) {
+      try {
+        const data = new Uint8Array(evt.target.result);
+        const workbook = XLSX.read(data, { type: "array" });
+        const firstSheet = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheet];
+        
+        rawExcelAOA = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+        if (rawExcelAOA.length === 0) {
+          showToast("El archivo Excel parece estar vacío.");
+          return;
         }
-        const sheet = wb.Sheets[wb.SheetNames[0]];
-        const aoa = XLSX.utils.sheet_to_json(sheet, {header:1, defval:"", raw:false});
-        let headerRowIdx = aoa.findIndex(r => r.some(c => String(c).trim() !== ""));
-        if (headerRowIdx === -1) headerRowIdx = 0;
-        const headers = (aoa[headerRowIdx] || []).map(h => String(h).trim());
-        const rows = aoa.slice(headerRowIdx+1).filter(r => r.some(c => String(c).trim() !== ""));
-        cb(null, {headers, rows});
-      }catch(err){ cb(err); }
+
+        excelHeaders = rawExcelAOA[0] || [];
+        excelRows = rawExcelAOA.slice(1);
+
+        populateColumnSelectors();
+        showToast("Excel cargado. Selecciona la columna del SKU.");
+      } catch (err) {
+        console.error("Error al leer Excel:", err);
+        showToast("Error al leer el archivo Excel.");
+      }
     };
-    reader.onerror = function(){ cb(new Error("No se pudo leer el archivo")); };
+
     reader.readAsArrayBuffer(file);
   }
 
-  $("#excelInput").addEventListener("change", function(e){
-    const file = e.target.files[0]; if (!file) return;
-    // Resetear estado previo para evitar conflicto con datos de BD
-    rawExcelAOA = [];
-    excelRows = [];
-    $("#excelName").textContent = file.name;
-    parseWorkbook(file, function(err, res){
-      if (err){ toast("No pude leer ese Excel. ¿Es .xlsx, .xls o .csv?"); return; }
-      excelHeaders = res.headers; rawExcelAOA = res.rows;
-      skuColIndex = guessSkuColumn(excelHeaders);
-      populateColSelects();
-      $("#excelCols").style.display = "block";
-      rebuildRowsFromAOA();
-      rebuildItems();
-      scheduleFbSave();
-      toast(`Excel cargado: ${rawExcelAOA.length} filas`);
-    });
-  });
-  function guessNameColumn(headers, rows){
-    if (!headers || !headers.length) return -1;
-    const rList = rows || rawExcelAOA || [];
-    const patterns = [
-      /^nombre$/i, /^producto$/i, /^name$/i, /^articulo$/i, /^artículo$/i,
-      /^item$/i, /^descripcion$/i, /^descripción$/i, /descripcion_corta/i,
-      /nombre_producto/i, /desc_articulo/i, /^detalle$/i, /^concepto$/i,
-      /titulo/i, /título/i, /^mercancia$/i, /^mercancía$/i
-    ];
-    for (const p of patterns){
-      const idx = headers.findIndex(h => p.test(String(h||'').trim()));
-      if (idx !== -1 && idx !== skuColIndex) return idx;
-    }
-    const softIdx = headers.findIndex((h, i) =>
-      i !== skuColIndex &&
-      /nom|prod|art|desc|det/i.test(String(h||'').trim()) &&
-      !/codigo|sku|id|precio|price|costo|stock|cant|peso|gram/i.test(String(h||'').trim())
-    );
-    if (softIdx !== -1) return softIdx;
-    if (rList && rList.length > 0){
-      let bestIdx = -1, maxScore = -1;
-      headers.forEach((h, colIdx) => {
-        if (colIdx === skuColIndex) return;
-        let score = 0;
-        const sample = rList.slice(0, 15);
-        sample.forEach(r => {
-          const val = String(r[colIdx] || '').trim();
-          if (val.length > 4 && /[a-zA-ZáéíóúÁÉÍÓÚñÑ]/.test(val)) {
-            score += val.includes(' ') ? 3 : 1;
-          }
-        });
-        if (score > maxScore) { maxScore = score; bestIdx = colIdx; }
+  function populateColumnSelectors() {
+    const skuSel = document.getElementById("skuCol");
+    const nameSel = document.getElementById("nameCol");
+    const priceSel = document.getElementById("priceCol");
+    const catSel = document.getElementById("catColSel");
+
+    const selects = [skuSel, nameSel, priceSel, catSel];
+    selects.forEach(s => { if(s) s.innerHTML = ""; });
+
+    excelHeaders.forEach((header, idx) => {
+      const optionText = header ? header.toString() : `Columna ${idx + 1}`;
+      selects.forEach(s => {
+        if (s) {
+          const opt = document.createElement("option");
+          opt.value = idx;
+          opt.textContent = optionText;
+          s.appendChild(opt);
+        }
       });
-      if (bestIdx !== -1 && maxScore > 0) return bestIdx;
-    }
-    return headers.findIndex((h, i) => i !== skuColIndex && !/precio|price|valor|stock|cantidad|peso|categor/i.test(h||''));
-  }
-  function guessPriceColumn(headers){
-    const patterns = [/precio/i, /price/i, /valor/i, /costo/i, /pvp/i];
-    for (const p of patterns){ const idx = headers.findIndex(h => p.test(String(h||"").trim())); if (idx !== -1) return idx; }
-    return -1;
-  }
-  function guessCatColumn(headers){
-    const patterns = [/categor/i, /dept/i, /departamento/i, /grupo/i, /seccion/i, /sección/i];
-    for (const p of patterns){ const idx = headers.findIndex(h => p.test(String(h||"").trim())); if (idx !== -1) return idx; }
-    return -1;
-  }
-
-  function populateColSelects(){
-    // Auto-detect if not yet set
-    if (nameColIndex === -1) nameColIndex = guessNameColumn(excelHeaders);
-    if (priceColIndex === -1) priceColIndex = guessPriceColumn(excelHeaders);
-    if (catColIndex === -1) catColIndex = guessCatColumn(excelHeaders);
-
-    function fillSel(id, currentIdx, allowNone){
-      const sel = $(id); if (!sel) return;
-      sel.innerHTML = allowNone ? `<option value="-1">— Ninguna —</option>` : "";
-      excelHeaders.forEach((h, i) => {
-        const opt = document.createElement("option");
-        opt.value = i; opt.textContent = h || `Columna ${i+1}`;
-        if (i === currentIdx) opt.selected = true;
-        sel.appendChild(opt);
-      });
-    }
-    fillSel("#skuCol", skuColIndex, false);
-    fillSel("#nameCol", nameColIndex, false);
-    fillSel("#priceCol", priceColIndex, true);
-    fillSel("#catColSel", catColIndex, true);
-  }
-
-  $("#skuCol").addEventListener("change", function(e){
-    skuColIndex = parseInt(e.target.value, 10);
-    rebuildRowsFromAOA(); rebuildItems();
-    scheduleFbSave();
-  });
-  $("#nameCol").addEventListener("change", function(e){
-    nameColIndex = parseInt(e.target.value, 10);
-    // Borrar títulos cacheados para que se regeneren con la nueva columna
-    Object.keys(notes).forEach(k => { if (notes[k]) delete notes[k].title; });
-    rebuildItems();
-    scheduleFbSave();
-  });
-  $("#priceCol").addEventListener("change", function(e){
-    priceColIndex = parseInt(e.target.value, 10);
-    rebuildItems();
-    scheduleFbSave();
-  });
-  $("#catColSel").addEventListener("change", function(e){
-    catColIndex = parseInt(e.target.value, 10);
-    rebuildItems();
-    scheduleFbSave();
-  });
-
-  function rebuildRowsFromAOA(){
-    const seen = new Map();
-    excelRows = rawExcelAOA.map(r => {
-      const skuRaw = r[skuColIndex] !== undefined ? String(r[skuColIndex]).trim() : "";
-      if (!skuRaw || isHeaderRow(skuRaw)) return null;
-      const skuClean = extractSkuNumber(skuRaw);
-      if (!skuClean) return null;
-
-      const obj = {};
-      excelHeaders.forEach((h, i) => { obj[h || `col${i}`] = r[i] !== undefined ? String(r[i]).trim() : ""; });
-      obj.__skuOriginal = skuRaw;
-      obj.__sku = skuClean;
-      obj.__skuNorm = normKey(skuClean);
-      return obj;
-    }).filter(Boolean);
-    const counts = {};
-    excelRows.forEach(o => { counts[o.__skuNorm] = (counts[o.__skuNorm]||0)+1; });
-    duplicateSkus = excelRows.filter(o => counts[o.__skuNorm] > 1).map(o => o.__sku)
-      .filter((v,i,a)=>a.indexOf(v)===i);
-    renderDupWarning();
-  }
-
-  function renderDupWarning(){
-    const el = $("#dupWarning");
-    if (!el) return;
-    if (!duplicateSkus.length){ el.innerHTML = ""; return; }
-    el.innerHTML = `<div class="warn-banner">⚠️ Hay ${duplicateSkus.length} SKU repetidos en tu Excel: ${duplicateSkus.slice(0,15).map(s=>`<b>${s}</b>`).join(", ")}${duplicateSkus.length>15?"…":""}. Revísalos para no duplicar productos en Didi Food.</div>`;
-  }
-
-  // ---------- fotos ----------
-  $("#photosInput").addEventListener("change", function(e){
-    const files = Array.from(e.target.files || []);
-    if (!files.length) return;
-    images = files.map(f => {
-      const baseName = stripExt(f.name);
-      const skuNum = extractSkuNumber(baseName);
-      const im = {
-        file: f,
-        name: f.name,
-        base: normKey(baseName),
-        numKey: skuNum,
-        url: URL.createObjectURL(f)
-      };
-      if (isFirebaseReady) {
-        fbUploadPhoto(f, normKey(skuNum || baseName), skuNum).then(res => {
-          if (res && res.url) {
-            im.url = res.url;
-            rebuildItems();
-            scheduleFbSave();
-          }
-        });
-      }
-      return im;
-    });
-    $("#photosName").textContent = `${files.length} foto(s)`;
-    rebuildItems();
-    toast(`${files.length} foto(s) cargadas`);
-  });
-
-  // ---------- merge & IA Inteligente ----------
-  function guessCol(re){ return excelHeaders.find(h => re.test(h||"")); }
-
-  const ABBREV_MAP = {
-    "CERV": "Cerveza", "CRV": "Cerveza", "BOT": "Botella", "BOTELLA": "Botella",
-    "LAT": "Lata", "LATA": "Lata", "PAQ": "Paquete", "PQ": "Paquete", "PAQUETE": "Paquete",
-    "RET": "Retornable", "DESC": "Desechable", "UND": "Und", "UNID": "Und", "UNIDADES": "Unidades",
-    "GR": "g", "GRS": "g", "KG": "kg", "KILO": "kg", "ML": "ml", "LT": "L", "LTS": "L"
-  };
-
-  function smartCleanTitle(rawTitle, row){
-    if (!rawTitle) {
-      const nameCol = guessCol(/nombre|producto|título|titulo|^name$/i);
-      rawTitle = (nameCol && row && row[nameCol]) ? row[nameCol] : (row ? (row.__skuOriginal || row.__sku) : "");
-    }
-    let s = String(rawTitle).trim();
-    // Limpiar guiones bajos
-    s = s.replace(/_/g, " ");
-    // Limpiar prefijos de sistema tipo Home4Veinte4mt
-    s = s.replace(/home\d+veinte\d+[a-z]*/gi, "").trim();
-
-    const words = s.split(/\s+/).filter(Boolean);
-    const cleanedWords = words.map(w => {
-      const cleanW = w.toUpperCase().replace(/[^A-Z0-9]/g, "");
-      if (ABBREV_MAP[cleanW]) return ABBREV_MAP[cleanW];
-      const measMatch = w.match(/^(\d+(?:[.,]\d+)?)\s*(ml|l|lt|lts|g|gr|grs|kg)$/i);
-      if (measMatch){
-        const unit = measMatch[2].toLowerCase();
-        return `${measMatch[1]} ${unit === "l" || unit === "lt" || unit === "lts" ? "L" : unit}`;
-      }
-      if (w.length > 1 && w === w.toUpperCase()){
-        return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
-      }
-      return w;
     });
 
-    let clean = cleanedWords.join(" ").trim();
-    if (clean) clean = clean.charAt(0).toUpperCase() + clean.slice(1);
-    return clean || rawTitle;
-  }
-
-  function smartGenerateDesc(item){
-    const title = item.title || smartCleanTitle("", item.row);
-    const cat = getCategoryOf(item).toLowerCase();
-    const row = item.row || {};
-
-    let sizeInfo = "";
-    const sizeMatch = title.match(/(\d+(?:[.,]\d+)?\s*(?:ml|l|g|kg|unidades|und))/i);
-    if (sizeMatch) sizeInfo = ` en presentación de ${sizeMatch[1]}`;
-
-    let template = "";
-    if (/bebida|gaseosa|agua|jugo|refresco|soda/i.test(cat) || /coca|pepsi|postobon|hit|agua|jugo|sprite|quatro/i.test(title)){
-      template = `Refrescante y de gran sabor, perfecta para acompañar tus comidas favoritas o refrescar tu día${sizeInfo}. Disfrútala bien fría.`;
-    } else if (/cerveza|licor|vino|whisky|ron|aguardiente|vodka/i.test(cat) || /cerveza|corona|poker|aguila|club|heineken|smirnoff/i.test(title)){
-      template = `Excelente opción para compartir en reuniones o disfrutar en ocasiones especiales${sizeInfo}. Calidad y sabor garantizado bien frío.`;
-    } else if (/snack|papas|platanos|pasabocas|galletas|dulces|chocolate/i.test(cat) || /doritos|lays|margarita|de todito|choclitos/i.test(title)){
-      template = `El snack crujiente y delicioso ideal para calmar tus antojos en cualquier momento del día${sizeInfo}. Listo para disfrutar.`;
-    } else if (/lacteo|leche|queso|yogurt|mantequilla/i.test(cat)){
-      template = `Producto fresco y nutritivo de la mejor calidad, indispensable para tus desayunos y recetas diarias en casa${sizeInfo}.`;
-    } else if (/despensa|abarrotes|arroz|aceite|granos|pasta/i.test(cat)){
-      template = `Ingrediente esencial para tu cocina con excelente rendimiento y calidad seleccionada para preparar tus mejores platos${sizeInfo}.`;
-    } else if (/limpieza|aseo|hogar|papel|jabon/i.test(cat)){
-      template = `Producto de alta eficacia y rendimiento para el cuidado y la higiene diaria de tu hogar${sizeInfo}.`;
-    } else {
-      template = `${title} de excelente calidad${sizeInfo}, seleccionado especialmente para ti. Práctico y listo para disfrutar.`;
-    }
-    return template;
-  }
-
-  function buildInitialTitle(row){
-    // Usar la columna mapeada por el usuario (nameColIndex) si está disponible
-    let raw = "";
-    if (nameColIndex >= 0 && excelHeaders[nameColIndex]){
-      raw = row[excelHeaders[nameColIndex]] || "";
-    }
-    if (!raw){
-      // Fallback: intentar con guessCol
-      const nameCol = guessCol(/nombre|producto|título|titulo|^name$/i);
-      raw = (nameCol && row[nameCol]) ? row[nameCol] : "";
-    }
-    if (!raw) raw = row.__skuOriginal || row.__sku;
-    return smartCleanTitle(raw, row);
-  }
-
-  function buildInitialDescription(row){
-    const descCol = guessCol(/descrip/i);
-    if (descCol && row[descCol]) return row[descCol];
-    return smartGenerateDesc({row, title: buildInitialTitle(row)});
-  }
-
-  function findImageFor(row){
-    const own = manualImages.get(row.__skuNorm);
-    if (own) return own;
-    const override = manualAssign.get(row.__skuNorm);
-    if (override) return images.find(im => im.base === override || im.numKey === override) || null;
-    return images.find(im => im.base === row.__skuNorm || (im.numKey && im.numKey === row.__skuNorm) || im.name.startsWith(row.__sku + ".")) || null;
-  }
-
-  function getCategoryOf(item){
-    if (item.aiCategory) return item.aiCategory;
-    const catCol = guessCol(/categor/i);
-    if (catCol && item.row && item.row[catCol]) return item.row[catCol];
-    return "Sin categoría";
-  }
-
-  function populateCategoriaSelect(){
-    const sel = $("#categoriaSelect");
-    const didiCatList = $("#didiCatList");
-    const cats = [...new Set(items.map(getCategoryOf))].sort((a,b)=>a.localeCompare(b));
-    const prevValue = categoriaFiltro;
-    sel.innerHTML = `<option value="todas">Todas las categorías</option>` + cats.map(c=>`<option value="${c}">${c}</option>`).join("");
-    if (didiCatList) didiCatList.innerHTML = cats.map(c=>`<option value="${c}"></option>`).join("");
-    if (cats.includes(prevValue)) sel.value = prevValue; else { categoriaFiltro = "todas"; sel.value = "todas"; }
-  }
-
-  function rebuildItems(){
-    items = excelRows.map(row => {
-      const img = findImageFor(row);
-      const saved = notes[row.__skuNorm] || {};
-      const prevLive = items.find(it => it.sku === row.__sku);
-      return {
-        sku: row.__sku, skuNorm: row.__skuNorm, row: row, image: img,
-        title: prevLive ? prevLive.title : (saved.title !== undefined ? saved.title : buildInitialTitle(row)),
-        desc: prevLive ? prevLive.desc : (saved.desc !== undefined ? saved.desc : buildInitialDescription(row)),
-        revisado: prevLive ? prevLive.revisado : !!saved.revisado,
-        aiCategory: prevLive ? prevLive.aiCategory : (saved.aiCategory || null),
-        improving: false
-      };
-    });
-    const conFotoCount = items.filter(i=>i.image).length;
-    const sinFotoCount = items.length - conFotoCount;
-
-    $("#navCountCatalogo").textContent = items.length;
-    $("#navCountResumen").textContent = items.length ? `${conFotoCount}/${items.length}` : "–";
+    document.getElementById("excelCols").style.display = "block";
     
-    // Contadores en chips de Catálogo
-    const chipTodos = $("#chipCountTodos"); if (chipTodos) chipTodos.textContent = items.length;
-    const chipCon = $("#chipCountCon"); if (chipCon) chipCon.textContent = conFotoCount;
-    const chipSin = $("#chipCountSin"); if (chipSin) chipSin.textContent = sinFotoCount;
+    // Auto-mapeo inicial si existen nombres comunes
+    excelHeaders.forEach((h, i) => {
+      const nameLower = String(h).toLowerCase();
+      if (nameLower.includes("sku") || nameLower.includes("codigo") || nameLower.includes("código")) skuSel.value = i;
+      if (nameLower.includes("nombre") || nameLower.includes("producto") || nameLower.includes("descripcion")) nameSel.value = i;
+      if (nameLower.includes("precio") || nameLower.includes("price") || nameLower.includes("costo")) priceSel.value = i;
+      if (nameLower.includes("categoria") || nameLower.includes("categoría")) catSel.value = i;
+    });
 
-    // Contadores y botones de faltantes
-    const sideMissing = $("#sideMissingCount"); if (sideMissing) sideMissing.textContent = sinFotoCount;
-    const boxMissing = $("#boxMissingCount"); if (boxMissing) boxMissing.textContent = sinFotoCount;
-    const btnSideMissing = $("#btnExportMissingSide"); if (btnSideMissing) btnSideMissing.disabled = (sinFotoCount === 0);
-    const btnBoxMissing = $("#btnExportMissingBox"); if (btnBoxMissing) btnBoxMissing.disabled = (sinFotoCount === 0);
-
-    $("#btnExportCsv").disabled = items.length === 0;
-    $("#btnExportXlsx").disabled = items.length === 0;
-    $("#btnExportZip").disabled = conFotoCount === 0;
-    refreshIaButtons();
-    populateCategoriaSelect();
-    renderResumen();
-    renderCatalog();
-    runCompare();
+    skuColIndex = parseInt(skuSel.value);
+    buildCatalogItems();
   }
 
-  // ---------- RESUMEN ----------
-  function renderResumen(){
-    const conFoto = items.filter(i=>i.image).length;
+  function buildCatalogItems() {
+    items = [];
+    excelRows.forEach((row, i) => {
+      const rawSku = row[skuColIndex];
+      if (!rawSku) return;
+
+      const sku = String(rawSku).trim();
+      const name = row[nameColIndex] ? String(row[nameColIndex]).trim() : `Producto ${sku}`;
+      const price = row[priceColIndex] ? String(row[priceColIndex]).trim() : "0";
+      const cat = row[catColIndex] ? String(row[catColIndex]).trim() : "Sin categoría";
+
+      items.push({
+        id: `item_${i}_${sku}`,
+        sku: sku,
+        nombre: name,
+        precio: price,
+        categoria: cat,
+        hasPhoto: false,
+        photoUrl: null
+      });
+    });
+
+    updateCounters();
+    showToast(`Se importaron ${items.length} productos del Excel.`);
+  }
+
+  function handlePhotosSelect(e) {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+
+    document.getElementById("photosName").textContent = `${files.length} foto(s) seleccionadas`;
+
+    files.forEach(file => {
+      const url = URL.createObjectURL(file);
+      images.push({
+        name: file.name,
+        file: file,
+        url: url
+      });
+    });
+
+    matchPhotosWithItems();
+  }
+
+  function matchPhotosWithItems() {
+    let matchedCount = 0;
+    items.forEach(item => {
+      const cleanSku = item.sku.toLowerCase();
+      const foundImage = images.find(img => {
+        const imageName = img.name.split('.')[0].toLowerCase();
+        return imageName === cleanSku;
+      });
+
+      if (foundImage) {
+        item.hasPhoto = true;
+        item.photoUrl = foundImage.url;
+        matchedCount++;
+      }
+    });
+
+    updateCounters();
+    showToast(`Se vincularon ${matchedCount} fotos por SKU.`);
+  }
+
+  function updateCounters() {
     const total = items.length;
+    const conFoto = items.filter(i => i.hasPhoto).length;
     const sinFoto = total - conFoto;
-    const revisados = items.filter(i=>i.revisado).length;
-    const usedBases = new Set(items.filter(i=>i.image).map(i=>i.image.base));
-    const orphans = images.filter(im => !usedBases.has(im.base));
 
-    $("#statTotal").textContent = total;
-    $("#statConFoto").textContent = conFoto;
-    $("#statSinFoto").textContent = sinFoto;
-    $("#statOrfanas").textContent = orphans.length;
-    $("#statRevisados").textContent = revisados;
+    document.getElementById("statTotal").textContent = total;
+    document.getElementById("statConFoto").textContent = conFoto;
+    document.getElementById("statSinFoto").textContent = sinFoto;
+    document.getElementById("navCountCatalogo").textContent = total;
 
-    const elStatSin = $("#statSinFoto");
-    if (elStatSin && elStatSin.parentElement) elStatSin.parentElement.classList.toggle("warn", sinFoto > 0);
-
-    const boxOrphan = $("#boxOrphanCount"); if (boxOrphan) boxOrphan.textContent = orphans.length;
-    const boxMissing = $("#boxMissingCount"); if (boxMissing) boxMissing.textContent = sinFoto;
-    const sideMissing = $("#sideMissingCount"); if (sideMissing) sideMissing.textContent = sinFoto;
-    const btnSideMissing = $("#btnExportMissingSide"); if (btnSideMissing) btnSideMissing.disabled = (sinFoto === 0);
-    const btnBoxMissing = $("#btnExportMissingBox"); if (btnBoxMissing) btnBoxMissing.disabled = (sinFoto === 0);
-
-    const pct = total ? Math.round((conFoto/total)*100) : 0;
-    $("#progressLabel").textContent = `${conFoto} / ${total} (${pct}%)`;
-    $("#progressBar").style.width = pct + "%";
-
-    // pendientes de foto -> permitir asignar desde fotos huérfanas
-    const pendWrap = $("#pendingList");
-    const pendientes = items.filter(i => !i.image);
-    if (!total){ pendWrap.innerHTML = `<p class="empty-mini">Sube un Excel para ver esta lista.</p>`; }
-    else if (!pendientes.length){ pendWrap.innerHTML = `<p class="empty-mini">Todos los productos tienen foto 🎉</p>`; }
-    else {
-      pendWrap.innerHTML = pendientes.map(it => {
-        const opts = orphans.map(o => `<option value="${o.base}">${o.name}</option>`).join("");
-        return `<div class="assign-row">
-          <span class="sku-tag">${it.sku}</span>
-          <select data-sku="${it.skuNorm}" class="assignSel">
-            <option value="">— asignar foto —</option>${opts}
-          </select>
-          <button class="assignBtn" data-sku="${it.skuNorm}">Asignar</button>
-        </div>`;
-      }).join("");
-      pendWrap.querySelectorAll(".assignBtn").forEach(btn => {
-        btn.addEventListener("click", () => {
-          const skuNorm = btn.dataset.sku;
-          const sel = pendWrap.querySelector(`.assignSel[data-sku="${skuNorm}"]`);
-          if (sel.value){ manualAssign.set(skuNorm, sel.value); rebuildItems(); toast("Foto asignada"); }
-        });
-      });
-    }
-
-    // fotos huérfanas -> asignar a un SKU pendiente
-    const orphWrap = $("#orphanList");
-    if (!images.length){ orphWrap.innerHTML = `<p class="empty-mini">Sube fotos para ver esta lista.</p>`; }
-    else if (!orphans.length){ orphWrap.innerHTML = `<p class="empty-mini">Todas tus fotos están en uso.</p>`; }
-    else {
-      const pendOpts = pendientes.map(it => `<option value="${it.skuNorm}">${it.sku}</option>`).join("");
-      orphWrap.innerHTML = orphans.map(o => `
-        <div class="assign-row">
-          <img class="thumb" src="${o.url}" alt="">
-          <span class="sku-tag" style="min-width:auto; max-width:90px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${o.name}</span>
-          <select data-base="${o.base}" class="orphanSel">
-            <option value="">— asignar a SKU —</option>${pendOpts}
-          </select>
-          <button class="orphanBtn" data-base="${o.base}">Asignar</button>
-        </div>`).join("");
-      orphWrap.querySelectorAll(".orphanBtn").forEach(btn => {
-        btn.addEventListener("click", () => {
-          const base = btn.dataset.base;
-          const sel = orphWrap.querySelector(`.orphanSel[data-base="${base}"]`);
-          if (sel.value){ manualAssign.set(sel.value, base); rebuildItems(); toast("Foto asignada"); }
-        });
-      });
-    }
+    const progress = total > 0 ? Math.round((conFoto / total) * 100) : 0;
+    document.getElementById("progressBar").style.width = `${progress}%`;
+    document.getElementById("progressLabel").textContent = `${conFoto} / ${total}`;
   }
-
-  // ---------- filtros / orden ----------
-  $("#search").addEventListener("input", e => { searchTerm = e.target.value.trim().toLowerCase(); renderCatalog(); });
-  $("#filterChips").addEventListener("click", e => {
-    const chip = e.target.closest(".chip"); if (!chip) return;
-    document.querySelectorAll("#filterChips .chip").forEach(c=>c.classList.remove("active"));
-    chip.classList.add("active"); currentFilter = chip.dataset.filter; renderCatalog();
-  });
-  $("#estadoSelect").addEventListener("change", e => { estadoFilter = e.target.value; renderCatalog(); });
-  $("#categoriaSelect").addEventListener("change", e => { categoriaFiltro = e.target.value; renderCatalog(); });
-  $("#sortSelect").addEventListener("change", e => { sortBy = e.target.value; renderCatalog(); });
-
-  function matchesFilter(item){
-    if (currentFilter === "con" && !item.image) return false;
-    if (currentFilter === "sin" && item.image) return false;
-    if (estadoFilter === "revisado" && !item.revisado) return false;
-    if (estadoFilter === "pendiente" && item.revisado) return false;
-    if (categoriaFiltro !== "todas" && getCategoryOf(item) !== categoriaFiltro) return false;
-    if (!searchTerm) return true;
-    const hay = [item.sku, item.row.__skuOriginal, item.desc, ...Object.values(item.row)].join(" ").toLowerCase();
-    return hay.includes(searchTerm);
-  }
-  function sortItems(list){
-    const nameCol = guessCol(/nombre|producto|título|titulo|^name$/i);
-    const priceCol = guessCol(/precio|price|valor/i);
-    const arr = list.slice();
-    if (sortBy === "nombre" && nameCol) arr.sort((a,b)=> (a.row[nameCol]||"").localeCompare(b.row[nameCol]||""));
-    else if (sortBy === "precio" && priceCol) arr.sort((a,b)=> (parseFloat((b.row[priceCol]||"0").replace(/[^0-9.\-]/g,""))||0) - (parseFloat((a.row[priceCol]||"0").replace(/[^0-9.\-]/g,""))||0)*0 + ((parseFloat((a.row[priceCol]||"0").replace(/[^0-9.\-]/g,""))||0) - (parseFloat((b.row[priceCol]||"0").replace(/[^0-9.\-]/g,""))||0)));
-    else if (sortBy === "sinfoto") arr.sort((a,b)=> (a.image?1:0) - (b.image?1:0));
-    else arr.sort((a,b)=> a.sku.localeCompare(b.sku, undefined, {numeric: true}));
-    return arr;
-  }
-
-  // ---------- render catálogo ----------
-  function fieldsForCard(row){
-    return Object.keys(row).filter(k => !k.startsWith("__")).map(k => `${k}: ${row[k]}`).filter(t => !/:\s*$/.test(t));
-  }
-
-  function renderCatalog(){
-    if (!items.length){ gridWrap.innerHTML = `<div class="empty">Sube tu Excel para empezar a armar las fichas de producto.</div>`; updateBulkBar(); return; }
-    const visible = sortItems(items.filter(matchesFilter));
-    if (!visible.length){ gridWrap.innerHTML = `<div class="empty">Nada coincide con ese filtro.</div>`; updateBulkBar(); return; }
-    const grid = document.createElement("div"); grid.className = "grid";
-    visible.forEach(item => grid.appendChild(renderCard(item)));
-    gridWrap.innerHTML = ""; gridWrap.appendChild(grid);
-    updateBulkBar();
-  }
-
-  function updateBulkBar(){
-    const bar = $("#bulkBar");
-    if (selected.size > 0){ bar.classList.add("show"); $("#bulkCount").textContent = selected.size; }
-    else bar.classList.remove("show");
-  }
-
-  async function getDownloadBlob(item){
-    if (!item.image) return null;
-    if ($("#optimizeToggle").checked){
-      try{ return await optimizeToSquareBlob(item.image.file); }catch(e){ return item.image.file; }
-    }
-    return item.image.file;
-  }
-
-  function renderCard(item){
-    const card = document.createElement("div");
-    card.className = "card" + (item.revisado ? " reviewed" : "");
-
-    const checkbox = document.createElement("input");
-    checkbox.type = "checkbox"; checkbox.className = "select-box";
-    checkbox.checked = selected.has(item.sku);
-    checkbox.addEventListener("click", (ev) => {
-      ev.stopPropagation();
-      if (checkbox.checked) selected.add(item.sku); else selected.delete(item.sku);
-      updateBulkBar();
-    });
-    card.appendChild(checkbox);
-
-    const photo = document.createElement("div"); photo.className = "photo";
-    photo.style.cursor = "pointer";
-    photo.title = "Haz clic para abrir la ficha de Didi Food";
-    photo.addEventListener("click", (e) => {
-      if (e.target.tagName !== "BUTTON") openDidiModal(item);
-    });
-
-    if (item.image){
-      photo.innerHTML = `<img src="${item.image.url}" alt="${item.sku}">`;
-      const editBtn = document.createElement("button");
-      editBtn.textContent = "✏️ Editar";
-      editBtn.style.cssText = "position:absolute; bottom:6px; right:6px; font-size:0.66rem; padding:4px 8px; z-index:2;";
-      editBtn.addEventListener("click", (ev) => { ev.stopPropagation(); openEditor(item); });
-      photo.appendChild(editBtn);
-    }
-    else { photo.style.cursor="pointer"; photo.title="Haz clic para asignar una foto"; photo.addEventListener("click",(ev)=>{if(ev.target.tagName!=="BUTTON")openPhotoPicker(item);}); photo.innerHTML=`<span class="badge-nofoto">Sin foto</span><div style="font-size:0.68rem;color:var(--muted);margin-top:4px;">📷 Clic para asignar</div><span>📦</span><span>Sin coincidencia</span>`; }
-    card.appendChild(photo);
-
-    const body = document.createElement("div"); body.className = "card-body";
-
-    const skuLine = document.createElement("div"); skuLine.className = "sku-line";
-    const skuGroup = document.createElement("div");
-    skuGroup.style.cssText = "display:flex; flex-direction:column; gap:2px; min-width:0; overflow:hidden; cursor:pointer;";
-    skuGroup.title = "Haz clic para abrir la ficha de Didi Food";
-    skuGroup.addEventListener("click", () => openDidiModal(item));
-    
-    const skuHeadRow = document.createElement("div");
-    skuHeadRow.style.cssText = "display:flex; align-items:center; gap:6px;";
-    skuHeadRow.innerHTML = `<span class="sku">${item.sku}</span>`;
-    
-    const catSpan = document.createElement("span");
-    catSpan.style.cssText = "font-size:0.64rem; color:var(--muted); background:var(--panel-2); border:1px solid var(--border); border-radius:6px; padding:2px 6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;";
-    catSpan.textContent = getCategoryOf(item);
-    skuHeadRow.appendChild(catSpan);
-    skuGroup.appendChild(skuHeadRow);
-
-    const titleSpan = document.createElement("span");
-    titleSpan.style.cssText = "font-size:0.75rem; font-weight:600; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;";
-    titleSpan.textContent = item.title || item.sku;
-    skuGroup.appendChild(titleSpan);
-
-    if (item.row.__skuOriginal && item.row.__skuOriginal !== item.sku){
-      const origSpan = document.createElement("span");
-      origSpan.className = "sku-orig";
-      origSpan.title = item.row.__skuOriginal;
-      origSpan.textContent = item.row.__skuOriginal;
-      skuGroup.appendChild(origSpan);
-    }
-
-    skuLine.appendChild(skuGroup);
-    const revLabel = document.createElement("label"); revLabel.className = "reviewed-toggle";
-    const revCheck = document.createElement("input"); revCheck.type = "checkbox"; revCheck.checked = item.revisado;
-    revCheck.addEventListener("change", () => {
-      item.revisado = revCheck.checked;
-      setNote(item.skuNorm, {revisado: item.revisado});
-      card.classList.toggle("reviewed", item.revisado);
-      renderResumen();
-      dbSaveAll();
-    });
-    revLabel.appendChild(revCheck); revLabel.appendChild(document.createTextNode(" Revisado"));
-    skuLine.appendChild(revLabel);
-    body.appendChild(skuLine);
-
-    const fields = document.createElement("div"); fields.className = "fields";
-    fieldsForCard(item.row).slice(0,5).forEach(t => { const s=document.createElement("span"); s.textContent=t; fields.appendChild(s); });
-    body.appendChild(fields);
-
-    const textarea = document.createElement("textarea"); textarea.className = "desc"; textarea.value = item.desc;
-    textarea.addEventListener("input", () => {
-      item.desc = textarea.value;
-      setNote(item.skuNorm, {desc: item.desc});
-      dbSaveAll();
-    });
-    body.appendChild(textarea);
-
-    const actions = document.createElement("div"); actions.className = "card-actions";
-
-    const btnOpenDidi = document.createElement("button");
-    btnOpenDidi.textContent = "👁️ Ficha Didi";
-    btnOpenDidi.style.fontWeight = "600";
-    btnOpenDidi.addEventListener("click", () => openDidiModal(item));
-    actions.appendChild(btnOpenDidi);
-
-    const btnCopy = document.createElement("button"); btnCopy.textContent = "Copiar";
-    btnCopy.addEventListener("click", async () => {
-      try{ await navigator.clipboard.writeText(`${item.title}\n${item.desc}`); toast("Título y descripción copiados"); }
-      catch(e){ textarea.select(); toast("Selecciona y copia con Ctrl+C"); }
-    });
-    actions.appendChild(btnCopy);
-
-    const btnDownload = document.createElement("button"); btnDownload.textContent = "Foto";
-    if (!item.image) btnDownload.disabled = true;
-    btnDownload.addEventListener("click", async () => {
-      if (!item.image) return;
-      btnDownload.disabled = true; btnDownload.textContent = "…";
-      try{
-        const blob = await getDownloadBlob(item);
-        const ext = $("#optimizeToggle").checked ? ".jpg" : (item.image.name.match(/\.[^.]+$/) || [".jpg"])[0];
-        const result = await saveFile(`${item.sku}${ext}`, blob);
-        if (result === "error") toast("No se pudo descargar la foto");
-      }catch(e){ toast("No se pudo descargar la foto"); }
-      finally{ btnDownload.disabled = !item.image; btnDownload.textContent = "Foto"; }
-    });
-    actions.appendChild(btnDownload);
-
-    const btnImprove = document.createElement("button");
-    btnImprove.textContent = "✨ Mejorar";
-    btnImprove.className = "primary";
-    btnImprove.addEventListener("click", async () => {
-      btnImprove.disabled = true; btnImprove.textContent = "…";
-      await improveProduct(item, true, true);
-      titleSpan.textContent = item.title;
-      textarea.value = item.desc;
-      btnImprove.disabled = false; btnImprove.textContent = "✨ Mejorar";
-      toast("Título y descripción mejorados");
-    });
-    actions.appendChild(btnImprove);
-
-    body.appendChild(actions);
-    card.appendChild(body);
-    return card;
-  }
-
-  // ---------- MOTOR DE IA INTELIGENTE (LOCAL & EXTERNO) ----------
-  async function callExternalAi(prompt, maxTokens = 120){
-    if (aiConfig.provider === "gemini" && aiConfig.apiKey){
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${aiConfig.apiKey}`;
-      const res = await fetch(url, {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({
-          contents: [{parts: [{text: prompt}]}],
-          generationConfig: {maxOutputTokens: maxTokens, temperature: 0.3}
-        })
-      });
-      if (!res.ok) throw new Error("Gemini HTTP " + res.status);
-      const data = await res.json();
-      return data.candidates[0].content.parts[0].text.trim();
-    } else if (aiConfig.provider === "openai" && aiConfig.apiKey){
-      const url = "https://api.openai.com/v1/chat/completions";
-      const res = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${aiConfig.apiKey}`
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          messages: [{role: "user", content: prompt}],
-          max_tokens: maxTokens,
-          temperature: 0.3
-        })
-      });
-      if (!res.ok) throw new Error("OpenAI HTTP " + res.status);
-      const data = await res.json();
-      return data.choices[0].message.content.trim();
-    }
-    return null;
-  }
-
-  async function improveProduct(item, doTitle = true, doDesc = true){
-    if (!item) return;
-    if (doTitle){
-      if (aiConfig.provider !== "local" && aiConfig.apiKey){
-        try{
-          const prompt = `Limpia y profesionaliza este título de producto para Didi Food / domicilios en Colombia. Debe ser corto, limpio, en Title Case, sin mayúsculas agresivas y sin códigos de inventario. Responde solo con el título:\n\nProducto: ${JSON.stringify(item.row)}`;
-          const res = await callExternalAi(prompt, 30);
-          if (res) item.title = res.replace(/["\n\r]/g, "").trim();
-          else item.title = smartCleanTitle("", item.row);
-        }catch(e){
-          item.title = smartCleanTitle("", item.row);
-        }
-      } else {
-        item.title = smartCleanTitle("", item.row);
-      }
-    }
-
-    if (doDesc){
-      if (aiConfig.provider !== "local" && aiConfig.apiKey){
-        try{
-          const prompt = `Escribe una descripción comercial atractiva y corta (1 o 2 frases) para este producto en Didi Food en español de Colombia. Resalta sabor, calidad o practicidad según el producto, sin inventar ingredientes raros. Responde solo con la descripción:\n\nTítulo: ${item.title}\nDatos: ${JSON.stringify(item.row)}`;
-          const res = await callExternalAi(prompt, 90);
-          if (res) item.desc = res.replace(/["\n\r]/g, " ").trim();
-          else item.desc = smartGenerateDesc(item);
-        }catch(e){
-          item.desc = smartGenerateDesc(item);
-        }
-      } else {
-        item.desc = smartGenerateDesc(item);
-      }
-    }
-
-    setNote(item.skuNorm, {title: item.title, desc: item.desc});
-    dbSaveAll();
-  }
-
-  // ---------- Clasificar categorías ----------
-  function classifyCategorySmart(item){
-    const text = [item.title, item.sku, item.desc, ...Object.values(item.row)].join(" ").toLowerCase();
-    if (/cerveza|poker|aguila|club colombia|corona|heineken|smirnoff|budweiser/i.test(text)) return "Cervezas";
-    if (/aguardiente|ron|whisky|vino|tequila|vodka|ginebra|licor/i.test(text)) return "Licores y Vinos";
-    if (/coca cola|pepsi|postobon|gaseosa|refresco|quatro|sprite|fanta|ginger/i.test(text)) return "Gaseosas";
-    if (/agua|jugo|hit|tampico|pulpa|néctar|nectar|te hatsu|hatsu|gatorade/i.test(text)) return "Aguas y Bebidas";
-    if (/papas|doritos|lays|margarita|de todito|choclitos|pasabocas|mani|snack/i.test(text)) return "Snacks y Pasabocas";
-    if (/galletas|chocolate|dulces|chocolatina|bon bon bum|caramelo|confite/i.test(text)) return "Dulces y Chocolates";
-    if (/leche|queso|yogurt|mantequilla|alpina|colanta/i.test(text)) return "Lácteos";
-    if (/arroz|aceite|granos|frijol|lenteja|pasta|sal|azucar|harina/i.test(text)) return "Despensa y Abarrotes";
-    if (/jabon|papel|detergente|cloro|aseo|limpieza|crema dental/i.test(text)) return "Cuidado y Limpieza";
-    if (/helado|paleta|crem helado/i.test(text)) return "Helados";
-    const catCol = guessCol(/categor/i);
-    if (catCol && item.row[catCol]) return item.row[catCol];
-    return "Otros";
-  }
-
-  $("#btnClassify").addEventListener("click", async () => {
-    if (!items.length) return;
-    const btn = $("#btnClassify"); btn.disabled = true; btn.textContent = "Clasificando…";
-    items.forEach(it => {
-      it.aiCategory = classifyCategorySmart(it);
-      setNote(it.skuNorm, {aiCategory: it.aiCategory});
-    });
-    populateCategoriaSelect();
-    renderCatalog();
-    dbSaveAll();
-    btn.disabled = false; btn.textContent = "🏷️ Clasificar categorías";
-    toast(`Categorías asignadas a ${items.length} productos`);
-  });
-
-  // ---------- Mejorar catálogo completo ----------
-  $("#btnImproveAll").addEventListener("click", async () => {
-    if (!items.length) return;
-    const btn = $("#btnImproveAll"); btn.disabled = true;
-    let done = 0;
-    for (const item of items){
-      await improveProduct(item, true, true);
-      done++;
-      if (done % 50 === 0 || done === items.length){
-        btn.textContent = `Mejorando… (${done}/${items.length})`;
-      }
-    }
-    renderCatalog();
-    dbSaveAll();
-    btn.disabled = false; btn.textContent = "✨ Mejorar títulos y descripciones";
-    toast(`${done} títulos y descripciones mejorados con éxito`);
-  });
-
-  // ---------- Acciones en lote ----------
-  $("#bulkImprove").addEventListener("click", async () => {
-    const chosen = items.filter(i => selected.has(i.sku));
-    if (!chosen.length) return;
-    const btn = $("#bulkImprove"); btn.disabled = true; btn.textContent = "Mejorando…";
-    for (const item of chosen){
-      await improveProduct(item, true, true);
-    }
-    btn.disabled = false; btn.textContent = "Mejorar texto (lote)";
-    renderCatalog();
-    dbSaveAll();
-    toast(`${chosen.length} productos mejorados`);
-  });
-
-  // ---------- exportar CSV / Excel ----------
-  function exportRowsFor(list){
-    const cols = excelHeaders.filter(Boolean);
-    const header = ["sku", "sku_original", ...cols, "categoria", "descripcion_final", "tiene_foto", "revisado"];
-    const rows = list.map(item => [item.sku, item.row.__skuOriginal || "", ...cols.map(c => item.row[c] || ""), getCategoryOf(item), item.desc, item.image?"si":"no", item.revisado?"si":"no"]);
-    return {header, rows};
-  }
-  async function exportCsv(list){
-    const {header, rows} = exportRowsFor(list);
-    const csvEscape = (v) => `"${String(v===undefined?"":v).replace(/"/g,'""')}"`;
-    const lines = [header.map(csvEscape).join(","), ...rows.map(r => r.map(csvEscape).join(","))];
-    const csv = "\uFEFF" + lines.join("\r\n");
-    const result = await saveFile("catalogo_didi_food.csv", csv);
-    if (result === "error") toast("No se pudo descargar el CSV");
-  }
-  async function exportXlsx(list){
-    const {header, rows} = exportRowsFor(list);
-    const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, "Catálogo");
-    const wbout = XLSX.write(wb, {bookType:"xlsx", type:"array"});
-    const blob = new Blob([wbout], {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
-    const result = await saveFile("catalogo_didi_food.xlsx", blob);
-    if (result === "error") toast("No se pudo descargar el Excel");
-  }
-  async function exportMissingXlsx(){
-    const missing = items.filter(i => !i.image);
-    if (!missing.length){
-      toast("¡Todos los productos tienen foto! No hay faltantes 🎉");
-      return;
-    }
-    const cols = excelHeaders.filter(Boolean);
-    const header = ["sku", "sku_original", ...cols, "categoria", "estado_foto"];
-    const rows = missing.map(item => [
-      item.sku,
-      item.row.__skuOriginal || item.sku,
-      ...cols.map(c => item.row[c] || ""),
-      getCategoryOf(item),
-      "FALTA FOTO"
-    ]);
-    const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Faltantes de Foto");
-    const wbout = XLSX.write(wb, {bookType:"xlsx", type:"array"});
-    const blob = new Blob([wbout], {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
-    const result = await saveFile("productos_sin_foto.xlsx", blob);
-    if (result !== "error") toast(`Descargados ${missing.length} productos sin foto`);
-    else toast("No se pudo descargar el Excel");
-  }
-
-  $("#btnExportCsv").addEventListener("click", () => exportCsv(items));
-  $("#btnExportXlsx").addEventListener("click", () => exportXlsx(items));
-  const sideBtn = $("#btnExportMissingSide"); if (sideBtn) sideBtn.addEventListener("click", exportMissingXlsx);
-  const boxBtn = $("#btnExportMissingBox"); if (boxBtn) boxBtn.addEventListener("click", exportMissingXlsx);
-
-  // ---------- optimizar y exportar fotos en zip ----------
-  function loadImageEl(file){
-    return new Promise((res, rej) => { const img = new Image(); img.onload = () => res(img); img.onerror = rej; img.src = URL.createObjectURL(file); });
-  }
-  async function optimizeToSquareBlob(file, target){
-    target = target || 1080;
-    const img = await loadImageEl(file);
-    const side = Math.min(img.naturalWidth, img.naturalHeight);
-    const sx = (img.naturalWidth - side) / 2, sy = (img.naturalHeight - side) / 2;
-    const outSide = Math.min(side, target);
-    const canvas = document.createElement("canvas");
-    canvas.width = outSide; canvas.height = outSide;
-    const ctx = canvas.getContext("2d");
-    ctx.drawImage(img, sx, sy, side, side, 0, 0, outSide, outSide);
-    return new Promise(resolve => canvas.toBlob(resolve, "image/jpeg", 0.88));
-  }
-
-  $("#btnExportZip").addEventListener("click", async () => {
-    const withPhoto = items.filter(i => i.image);
-    if (!withPhoto.length) return;
-    const btn = $("#btnExportZip"); btn.disabled = true; btn.textContent = "Preparando…";
-    try{
-      const zip = new JSZip();
-      const optimize = $("#optimizeToggle").checked;
-      for (let i=0; i<withPhoto.length; i++){
-        const item = withPhoto[i];
-        btn.textContent = `Preparando… (${i+1}/${withPhoto.length})`;
-        const blob = optimize ? await optimizeToSquareBlob(item.image.file) : item.image.file;
-        const ext = optimize ? "jpg" : (item.image.name.split(".").pop() || "jpg");
-        zip.file(`${item.sku}.${ext}`, blob);
-      }
-      const content = await zip.generateAsync({type:"blob"});
-      const result = await saveFile("fotos_didi_food.zip", content);
-      if (result === "error") toast("No se pudo generar el .zip");
-    }catch(e){
-      toast("No se pudo generar el .zip");
-    } finally {
-      btn.disabled = false; btn.textContent = "Fotos en .zip";
-    }
-  });
-
-  // ---------- comparar con Rappi ----------
-  let rappiHeaders = [], rappiAOA = [], rappiSkuIdx = -1;
-  $("#rappiInput").addEventListener("change", function(e){
-    const file = e.target.files[0]; if (!file) return;
-    $("#rappiName").textContent = file.name;
-    parseWorkbook(file, function(err, res){
-      if (err){ toast("No pude leer ese Excel de Rappi."); return; }
-      rappiHeaders = res.headers; rappiAOA = res.rows;
-      rappiSkuIdx = guessSkuColumn(rappiHeaders);
-      const sel = $("#rappiCol"); sel.innerHTML = "";
-      rappiHeaders.forEach((h,i) => {
-        const opt = document.createElement("option"); opt.value = i; opt.textContent = h || `Columna ${i+1}`;
-        if (i === rappiSkuIdx) opt.selected = true; sel.appendChild(opt);
-      });
-      $("#rappiColWrap").style.display = "block";
-      runCompare();
-    });
-  });
-  $("#rappiCol").addEventListener("change", function(e){ rappiSkuIdx = parseInt(e.target.value, 10); runCompare(); });
-
-  let lastCompare = {enRappi:[], enCatalogo:[]};
-  function runCompare(){
-    $("#navCountComparar").textContent = rappiAOA.length ? "•" : "–";
-    if (!rappiAOA.length || !items.length){
-      $("#compareResult").innerHTML = items.length ? "" : `<p class="hint" style="color:var(--muted); font-size:0.8rem;">Sube primero tu Excel principal (en el menú Resumen) para poder comparar.</p>`;
-      return;
-    }
-    const rappiSkus = new Map();
-    rappiAOA.forEach(r => {
-      const raw = r[rappiSkuIdx] !== undefined ? String(r[rappiSkuIdx]).trim() : "";
-      if (raw){
-        const clean = extractSkuNumber(raw);
-        rappiSkus.set(normKey(clean), clean || raw);
-      }
-    });
-    const catalogSkus = new Map();
-    items.forEach(it => catalogSkus.set(normKey(it.sku), it.sku));
-    const enRappiNoCatalogo = [...rappiSkus.entries()].filter(([k]) => !catalogSkus.has(k)).map(([,v]) => v);
-    const enCatalogoNoRappi = [...catalogSkus.entries()].filter(([k]) => !rappiSkus.has(k)).map(([,v]) => v);
-    lastCompare = {enRappi:enRappiNoCatalogo, enCatalogo:enCatalogoNoRappi};
-    $("#compareResult").innerHTML = `
-      <div class="compare-result">
-        <div class="compare-col">
-          <h3>En Rappi, no en tu catálogo (${enRappiNoCatalogo.length}) <button id="copyRappiList">Copiar</button></h3>
-          <ul>${enRappiNoCatalogo.slice(0,300).map(s=>`<li>${s}</li>`).join("") || "<li>— ninguno —</li>"}</ul>
-        </div>
-        <div class="compare-col">
-          <h3>En tu catálogo, no en Rappi (${enCatalogoNoRappi.length}) <button id="copyCatalogoList">Copiar</button></h3>
-          <ul>${enCatalogoNoRappi.slice(0,300).map(s=>`<li>${s}</li>`).join("") || "<li>— ninguno —</li>"}</ul>
-        </div>
-      </div>`;
-    const cr = $("#copyRappiList"); if (cr) cr.addEventListener("click", async ()=>{ try{ await navigator.clipboard.writeText(lastCompare.enRappi.join("\n")); toast("Lista copiada"); }catch(e){} });
-    const cc = $("#copyCatalogoList"); if (cc) cc.addEventListener("click", async ()=>{ try{ await navigator.clipboard.writeText(lastCompare.enCatalogo.join("\n")); toast("Lista copiada"); }catch(e){} });
-  }
-
-  // ---------- editor de foto (recorte + fondo blanco) ----------
-  let editorItem = null, editorImgEl = null;
-  let editorState = {zoom:1, offX:0, offY:0, brightness:100, contrast:100, whiteBg:false};
-  const editorCanvas = $("#editorCanvas");
-  const editorCtx = editorCanvas.getContext("2d");
-
-  function loadImageElP(file){
-    return new Promise((res, rej) => { const img = new Image(); img.onload = () => res(img); img.onerror = rej; img.src = URL.createObjectURL(file); });
-  }
-
-  async function openEditor(item){
-    if (!item.image) return;
-    editorItem = item;
-    editorImgEl = await loadImageElP(item.image.file);
-    editorState = {zoom:1, offX:0, offY:0, brightness:100, contrast:100, whiteBg:(item.image.file.type === "image/png")};
-    $("#editorZoom").value = 1; $("#editorBrightness").value = 100; $("#editorContrast").value = 100;
-    $("#editorWhiteBg").checked = editorState.whiteBg;
-    $("#editorTitle").textContent = "Editar foto — " + item.sku;
-    $("#editorOverlay").classList.add("show");
-    drawEditor();
-  }
-  function closeEditor(){ $("#editorOverlay").classList.remove("show"); editorItem = null; editorImgEl = null; }
-  $("#editorCancel").addEventListener("click", closeEditor);
-
-  function drawEditorOn(ctx, size){
-    const img = editorImgEl;
-    const minDim = Math.min(img.naturalWidth, img.naturalHeight);
-    // escala base: la imagen cubre el cuadro (cover) y luego se multiplica por el zoom
-    const baseScale = size / minDim;
-    const scale = baseScale * editorState.zoom;
-    const w = img.naturalWidth * scale, h = img.naturalHeight * scale;
-    // límites de paneo para que la imagen siempre cubra el cuadro
-    const maxOffX = Math.max(0, (w - size) / 2);
-    const maxOffY = Math.max(0, (h - size) / 2);
-    const offX = Math.max(-maxOffX, Math.min(maxOffX, editorState.offX));
-    const offY = Math.max(-maxOffY, Math.min(maxOffY, editorState.offY));
-    editorState.offX = offX; editorState.offY = offY;
-
-    ctx.clearRect(0,0,size,size);
-    if (editorState.whiteBg){ ctx.fillStyle = "#ffffff"; ctx.fillRect(0,0,size,size); }
-    ctx.filter = `brightness(${editorState.brightness}%) contrast(${editorState.contrast}%)`;
-    ctx.drawImage(img, size/2 - w/2 + offX, size/2 - h/2 + offY, w, h);
-    ctx.filter = "none";
-  }
-  function drawEditor(){ drawEditorOn(editorCtx, editorCanvas.width); }
-
-  $("#editorZoom").addEventListener("input", e => { editorState.zoom = parseFloat(e.target.value); drawEditor(); });
-  $("#editorBrightness").addEventListener("input", e => { editorState.brightness = parseFloat(e.target.value); drawEditor(); });
-  $("#editorContrast").addEventListener("input", e => { editorState.contrast = parseFloat(e.target.value); drawEditor(); });
-  $("#editorWhiteBg").addEventListener("change", e => { editorState.whiteBg = e.target.checked; drawEditor(); });
-
-  (function setupDrag(){
-    const wrap = $("#editorCanvasWrap");
-    let dragging = false, startX=0, startY=0, startOffX=0, startOffY=0;
-    wrap.addEventListener("pointerdown", e => {
-      if (!editorItem) return;
-      dragging = true; wrap.style.cursor = "grabbing";
-      startX = e.clientX; startY = e.clientY; startOffX = editorState.offX; startOffY = editorState.offY;
-      wrap.setPointerCapture(e.pointerId);
-    });
-    wrap.addEventListener("pointermove", e => {
-      if (!dragging) return;
-      const rect = wrap.getBoundingClientRect();
-      const scaleRatio = editorCanvas.width / rect.width;
-      editorState.offX = startOffX + (e.clientX - startX) * scaleRatio;
-      editorState.offY = startOffY + (e.clientY - startY) * scaleRatio;
-      drawEditor();
-    });
-    ["pointerup","pointercancel","pointerleave"].forEach(evt => wrap.addEventListener(evt, () => { dragging = false; wrap.style.cursor = "grab"; }));
-  })();
-
-  $("#editorSave").addEventListener("click", () => {
-    if (!editorItem) return;
-    const size = 1080;
-    const outCanvas = document.createElement("canvas");
-    outCanvas.width = size; outCanvas.height = size;
-    const outCtx = outCanvas.getContext("2d");
-    drawEditorOn(outCtx, size);
-    const format = editorState.whiteBg ? "image/jpeg" : "image/png";
-    const ext = editorState.whiteBg ? "jpg" : "png";
-    outCanvas.toBlob(blob => {
-      const item = editorItem;
-      manualImages.set(item.skuNorm, {file:blob, name:`${item.sku}_editada.${ext}`, base:"__manual__"+item.skuNorm, url:URL.createObjectURL(blob)});
-      closeEditor();
-      rebuildItems();
-      dbSaveImages([manualImages.get(item.skuNorm)]);
-      toast("Foto editada guardada");
-    }, format, 0.92);
-  });
-
-  // ---------- VENTANA DE ARTÍCULO ESTILO DIDI FOOD ----------
-  let currentDidiIndex = 0;
-  const didiModal = $("#didiModal");
-
-  function openDidiModal(item){
-    if (!item || !items.length) return;
-    const idx = items.findIndex(x => x.sku === item.sku);
-    currentDidiIndex = idx !== -1 ? idx : 0;
-    renderDidiModalData(items[currentDidiIndex]);
-    didiModal.classList.add("show");
-  }
-
-  function closeDidiModal(){
-    didiModal.classList.remove("show");
-  }
-
-  function renderDidiModalData(item){
-    if (!item) return;
-    const nameCol = guessCol(/nombre|producto|título|titulo|^name$/i);
-    const priceCol = guessCol(/precio|price|valor/i);
-    const stockCol = guessCol(/stock|cantidad|inventario|qty/i);
-    const pesoCol = guessCol(/peso|gramos|gramaje|weight/i);
-    const volCol = guessCol(/volumen|litros|ml/i);
-
-    $("#didiSku").value = item.sku;
-    $("#didiNombre").value = item.title || smartCleanTitle("", item.row);
-    $("#didiDesc").value = item.desc || smartGenerateDesc(item);
-    $("#didiSkuOrig").value = (item.row && item.row.__skuOriginal) ? item.row.__skuOriginal : item.sku;
-    
-    // Precio
-    let priceVal = priceCol && item.row[priceCol] ? item.row[priceCol] : "";
-    priceVal = priceVal.replace(/[^0-9.]/g, "");
-    $("#didiPrecio").value = priceVal;
-
-    // Stock
-    let stockVal = stockCol && item.row[stockCol] ? item.row[stockCol] : "100";
-    $("#didiStock").value = stockVal;
-
-    // Categoría
-    $("#didiCategoria").value = getCategoryOf(item);
-
-    // Peso / Volumen
-    let peso = pesoCol && item.row[pesoCol] ? item.row[pesoCol] : "";
-    let vol = volCol && item.row[volCol] ? item.row[volCol] : "";
-    if (!peso){
-      const m = $("#didiNombre").value.match(/(\d+(?:[.,]\d+)?)\s*(?:g|gr|grs|kg)/i);
-      if (m) peso = m[1];
-    }
-    if (!vol){
-      const m = $("#didiNombre").value.match(/(\d+(?:[.,]\d+)?)\s*(?:ml|l|lt|lts)/i);
-      if (m) vol = m[1];
-    }
-    $("#didiPeso").value = peso;
-    $("#didiVolumen").value = vol;
-
-    // Foto
-    const photoBox = $("#didiPhotoBox");
-    const photoStatus = $("#didiPhotoStatus");
-    if (item.image){
-      photoBox.innerHTML = `<img src="${item.image.url}" alt="${item.sku}">`;
-      photoStatus.textContent = "✅ Estado: Con foto lista";
-      photoStatus.style.color = "var(--teal)";
-      $("#didiDownloadPhotoBtn").disabled = false;
-      $("#didiEditPhotoBtn").disabled = false;
-    } else {
-      photoBox.innerHTML = `<div class="didi-photo-box empty">☁️<br>Agregar foto<br><span style="font-size:0.65rem; color:var(--danger);">Sin foto</span></div>`;
-      photoStatus.textContent = "⚠️ Estado: Sin foto asignada";
-      photoStatus.style.color = "var(--danger)";
-      $("#didiDownloadPhotoBtn").disabled = true;
-      $("#didiEditPhotoBtn").disabled = true;
-    }
-
-    $("#didiProductCounter").textContent = `${currentDidiIndex + 1} / ${items.length}`;
-    $("#didiPrevBtn").disabled = (currentDidiIndex <= 0);
-    $("#didiNextBtn").disabled = (currentDidiIndex >= items.length - 1);
-  }
-
-  function saveCurrentDidiProduct(){
-    const item = items[currentDidiIndex];
-    if (!item) return;
-    item.title = $("#didiNombre").value.trim();
-    item.desc = $("#didiDesc").value.trim();
-    item.aiCategory = $("#didiCategoria").value.trim();
-    item.revisado = true;
-
-    setNote(item.skuNorm, {
-      title: item.title,
-      desc: item.desc,
-      aiCategory: item.aiCategory,
-      revisado: true
-    });
-
-    dbSaveAll();
-    renderResumen();
-    renderCatalog();
-    toast(`Guardado en PC: SKU ${item.sku}`);
-  }
-
-  $("#didiCloseBtn").addEventListener("click", closeDidiModal);
-  $("#didiSaveBtn").addEventListener("click", saveCurrentDidiProduct);
-
-  $("#didiPrevBtn").addEventListener("click", () => {
-    saveCurrentDidiProduct();
-    if (currentDidiIndex > 0){
-      currentDidiIndex--;
-      renderDidiModalData(items[currentDidiIndex]);
-    }
-  });
-
-  $("#didiNextBtn").addEventListener("click", () => {
-    saveCurrentDidiProduct();
-    if (currentDidiIndex < items.length - 1){
-      currentDidiIndex++;
-      renderDidiModalData(items[currentDidiIndex]);
-    }
-  });
-
-  // Botones de mejora IA dentro de la modal de Didi
-  $("#didiImproveTitleBtn").addEventListener("click", async () => {
-    const item = items[currentDidiIndex];
-    if (!item) return;
-    const btn = $("#didiImproveTitleBtn"); btn.disabled = true;
-    await improveProduct(item, true, false);
-    $("#didiNombre").value = item.title;
-    btn.disabled = false;
-    toast("Título mejorado");
-  });
-
-  $("#didiImproveDescBtn").addEventListener("click", async () => {
-    const item = items[currentDidiIndex];
-    if (!item) return;
-    const btn = $("#didiImproveDescBtn"); btn.disabled = true;
-    await improveProduct(item, false, true);
-    $("#didiDesc").value = item.desc;
-    btn.disabled = false;
-    toast("Descripción mejorada");
-  });
-
-  $("#didiImproveAllBtn").addEventListener("click", async () => {
-    const item = items[currentDidiIndex];
-    if (!item) return;
-    const btn = $("#didiImproveAllBtn"); btn.disabled = true; btn.textContent = "Mejorando…";
-    await improveProduct(item, true, true);
-    $("#didiNombre").value = item.title;
-    $("#didiDesc").value = item.desc;
-    btn.disabled = false; btn.textContent = "✨ Mejorar todo con IA";
-    toast("Título y descripción mejorados");
-  });
-
-  // Copiar campo individual
-  document.querySelectorAll(".copy-btn[data-target]").forEach(btn => {
-    btn.addEventListener("click", async () => {
-      const targetId = btn.dataset.target;
-      const el = document.getElementById(targetId);
-      if (el && el.value){
-        try{
-          await navigator.clipboard.writeText(el.value);
-          const orig = btn.textContent;
-          btn.textContent = "✓ ¡Copiado!";
-          setTimeout(() => btn.textContent = orig, 1300);
-        }catch(e){
-          el.select();
-          toast("Presiona Ctrl+C");
-        }
-      } else {
-        toast("Campo vacío");
-      }
-    });
-  });
-
-  // Copiar ficha completa
-  $("#didiCopyAllBtn").addEventListener("click", async () => {
-    const item = items[currentDidiIndex];
-    if (!item) return;
-    const text = [
-      `Código de barras / SKU: ${$("#didiSku").value}`,
-      `Nombre del artículo: ${$("#didiNombre").value}`,
-      `Descripción: ${$("#didiDesc").value}`,
-      `Identificación adicional: ${$("#didiSkuOrig").value}`,
-      `Precio: $${$("#didiPrecio").value}`,
-      `Stock: ${$("#didiStock").value}`,
-      `Categoría: ${$("#didiCategoria").value}`,
-      `Peso: ${$("#didiPeso").value} g`,
-      `Volumen: ${$("#didiVolumen").value} ml`,
-      `Almacenamiento: ${$("#didiAlmacenamiento").value}`
-    ].join("\n");
-    try{
-      await navigator.clipboard.writeText(text);
-      toast("Ficha completa copiada para Didi Food");
-    }catch(e){
-      toast("No se pudo copiar");
-    }
-  });
-
-  // Fotos desde la modal de Didi
-  $("#didiPhotoInput").addEventListener("change", (e) => {
-    const f = e.target.files[0];
-    if (!f || !items[currentDidiIndex]) return;
-    const item = items[currentDidiIndex];
-    const newImg = {file:f, name:f.name, base:"__manual__"+item.skuNorm, numKey:item.sku, url:URL.createObjectURL(f)};
-    manualImages.set(item.skuNorm, newImg);
-    dbSaveImages([newImg]);
-    rebuildItems();
-    renderDidiModalData(items[currentDidiIndex]);
-    toast("Foto adjuntada y sincronizando con la nube...");
-  });
-
-  $("#didiDownloadPhotoBtn").addEventListener("click", async () => {
-    const item = items[currentDidiIndex];
-    if (!item || !item.image) return;
-    const blob = await getDownloadBlob(item);
-    const ext = $("#optimizeToggle").checked ? ".jpg" : (item.image.name.match(/\.[^.]+$/) || [".jpg"])[0];
-    await saveFile(`${item.sku}${ext}`, blob);
-  });
-
-  $("#didiEditPhotoBtn").addEventListener("click", () => {
-    const item = items[currentDidiIndex];
-    if (!item || !item.image) return;
-    openEditor(item);
-  });
-
-  // ---------- MODAL CONFIGURACIÓN IA ----------
-  const aiConfigModal = $("#aiConfigModal");
-  $("#btnOpenAiConfig").addEventListener("click", () => {
-    $("#aiProviderSelect").value = aiConfig.provider || "local";
-    $("#aiApiKey").value = aiConfig.apiKey || "";
-    $("#apiKeyWrap").style.display = aiConfig.provider === "local" ? "none" : "block";
-    aiConfigModal.classList.add("show");
-  });
-
-  $("#aiProviderSelect").addEventListener("change", (e) => {
-    $("#apiKeyWrap").style.display = e.target.value === "local" ? "none" : "block";
-  });
-
-  $("#aiConfigCancelBtn").addEventListener("click", () => aiConfigModal.classList.remove("show"));
-  $("#aiConfigCloseBtn").addEventListener("click", () => aiConfigModal.classList.remove("show"));
-
-  $("#aiConfigSaveBtn").addEventListener("click", () => {
-    aiConfig.provider = $("#aiProviderSelect").value;
-    aiConfig.apiKey = $("#aiApiKey").value.trim();
-    saveAiConfig(aiConfig);
-    aiConfigModal.classList.remove("show");
-    const hint = $("#iaHint");
-    if (hint){
-      hint.textContent = aiConfig.provider === "local"
-        ? "Listo para usar: Motor Inteligente Local (100% offline y gratis en tu PC)."
-        : `Conectado con ${aiConfig.provider.toUpperCase()} API.`;
-      hint.style.color = "var(--teal)";
-    }
-    toast("Configuración de IA guardada");
-  });
-
-  // Botón Limpiar BD en Sidebar
-  const btnClearDb = $("#btnClearDb");
-  if (btnClearDb) btnClearDb.addEventListener("click", dbClearAll);
-
-  // Atajos de teclado para Modal Didi
-  window.addEventListener("keydown", (e) => {
-    if (e.key === "Escape"){
-      closeDidiModal();
-      aiConfigModal.classList.remove("show");
-    }
-    if (didiModal.classList.contains("show") && !["INPUT", "TEXTAREA"].includes(document.activeElement.tagName)){
-      if (e.key === "ArrowLeft") $("#didiPrevBtn").click();
-      if (e.key === "ArrowRight") $("#didiNextBtn").click();
-    }
-  });
-
-  
-  // ---------- SELECTOR DE FOTOS (photo picker modal) ----------
-  var photoPickerItem = null;
-
-  function openPhotoPicker(item){
-    photoPickerItem = item;
-    $("#photoPickerTitle").textContent = "Asignar foto → SKU " + item.sku;
-    $("#photoPickerSearch").value = "";
-    renderPhotoPickerGrid("");
-    $("#photoPickerOverlay").classList.add("show");
-  }
-
-  function closePhotoPicker(){
-    $("#photoPickerOverlay").classList.remove("show");
-    photoPickerItem = null;
-  }
-
-  function renderPhotoPickerGrid(filter){
-    var grid = $("#photoPickerGrid");
-    grid.innerHTML = "";
-    var usedBases = new Set(items.filter(function(i){ return i.image; }).map(function(i){ return i.image.base; }));
-    var list = images.filter(function(im){
-      if (!filter) return true;
-      return im.name.toLowerCase().includes(filter.toLowerCase());
-    });
-    if (!list.length){
-      grid.innerHTML = '<p style="color:var(--muted); font-size:0.82rem; grid-column:1/-1;">No hay fotos subidas aun.</p>';
-      return;
-    }
-    list.forEach(function(im){
-      var isUsed = usedBases.has(im.base);
-      var wrap = document.createElement("div");
-      wrap.style.cssText = "position:relative; border-radius:9px; overflow:hidden; cursor:pointer; border:2px solid " + (isUsed ? "var(--teal)" : "var(--danger)") + "; aspect-ratio:1;";
-      wrap.title = im.name + (isUsed ? " (asignada)" : " (sin usar)");
-      var img2 = document.createElement("img");
-      img2.src = im.url;
-      img2.style.cssText = "width:100%; height:100%; object-fit:cover; display:block;";
-      wrap.appendChild(img2);
-      var badge = document.createElement("div");
-      badge.style.cssText = "position:absolute; bottom:0; left:0; right:0; background:" + (isUsed ? "#1E6F63CC" : "#AE3A26CC") + "; color:#fff; font-size:0.58rem; padding:3px 5px; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;";
-      badge.textContent = im.name;
-      wrap.appendChild(badge);
-      wrap.addEventListener("click", function(){
-        if (!photoPickerItem) return;
-        manualImages.set(photoPickerItem.skuNorm, im);
-        rebuildItems();
-        toast("Foto " + im.name + " asignada al SKU " + photoPickerItem.sku);
-        dbSaveImages([]);
-        closePhotoPicker();
-      });
-      grid.appendChild(wrap);
-    });
-  }
-
-  $("#photoPickerClose").addEventListener("click", closePhotoPicker);
-  $("#photoPickerOverlay").addEventListener("click", function(e){ if (e.target === $("#photoPickerOverlay")) closePhotoPicker(); });
-  $("#photoPickerSearch").addEventListener("input", function(e){ renderPhotoPickerGrid(e.target.value); });
-
-  $("#photoPickerUpload").addEventListener("change", function(e){
-    var files = Array.from(e.target.files || []);
-    if (!files.length) return;
-    var newImgs = files.map(function(f){
-      var skuNum = extractSkuNumber(stripExt(f.name));
-      if (isFirebaseReady) {
-        fbUploadPhoto(f, normKey(skuNum || stripExt(f.name)), skuNum);
-      }
-      return { file:f, name:f.name, base:normKey(stripExt(f.name)), numKey:extractSkuNumber(stripExt(f.name)), url:URL.createObjectURL(f) };
-    });
-    newImgs.forEach(function(ni){
-      var existing = images.findIndex(function(im){ return im.name === ni.name; });
-      if (existing >= 0) images[existing] = ni; else images.push(ni);
-    });
-    rebuildItems();
-    renderPhotoPickerGrid($("#photoPickerSearch").value);
-    toast(files.length + " foto(s) nueva(s) subidas");
-    dbSaveImages(newImgs);
-    e.target.value = "";
-  });
-  // ---------- NAVEGACIÓN ENTRE VISTAS ----------
-  function switchView(viewName){
-    // Actualizar botones del nav
-    document.querySelectorAll("#navlist button").forEach(btn => {
-      btn.classList.toggle("active", btn.dataset.view === viewName);
-    });
-    // Mostrar/ocultar secciones
-    document.querySelectorAll(".view").forEach(sec => {
-      sec.classList.toggle("active", sec.id === "view-" + viewName);
-    });
-    // Actualizar título del topbar
-    const titles = { resumen: "Resumen", catalogo: "Catálogo", comparar: "Comparar con Rappi" };
-    const subs = {
-      resumen: "Estado general de tu catálogo.",
-      catalogo: "Todos los productos con sus fotos y fichas para Didi Food.",
-      comparar: "Compara este catálogo con tu tienda de Rappi."
-    };
-    const t = $("#topbarTitle"); if (t) t.textContent = titles[viewName] || viewName;
-    const s = $("#topbarSubtitle"); if (s) s.textContent = subs[viewName] || "";
-  }
-
-  $("#navlist").addEventListener("click", function(e){
-    const btn = e.target.closest("button[data-view]");
-    if (!btn) return;
-    switchView(btn.dataset.view);
-  });
-
-  
-  const btnSyncFb = $("#btnSyncFb");
-  if (btnSyncFb) {
-    btnSyncFb.addEventListener("click", async () => {
-      if (!isFirebaseReady) { toast("Firebase no está listo aún"); return; }
-      btnSyncFb.disabled = true;
-      btnSyncFb.textContent = "Sincronizando...";
-      await fbSaveAll();
-      btnSyncFb.disabled = false;
-      btnSyncFb.textContent = "☁️ Sincronizar con Firebase";
-      toast("¡Catálogo sincronizado en Firebase!");
-    });
-  }
-
-  // Carga inicial: primero intenta la nube (Firebase), así cualquier dispositivo
-  // que abra este enlace ve el mismo catálogo. Si no hay nube o falla, usa la
-  // copia local de este navegador como respaldo (modo sin conexión).
-  (async function bootLoad(){
-    let loadedFromCloud = false;
-    if (isFirebaseReady) {
-      try { loadedFromCloud = await fbLoadAll(); }
-      catch(e) { console.warn("No se pudo cargar desde Firebase al iniciar:", e); }
-    }
-    if (!loadedFromCloud) {
-      await dbLoadAll();
-    }
-  })();
 
 })();
 </script>
+
 </body>
 </html>
